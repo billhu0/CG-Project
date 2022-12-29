@@ -30,3 +30,28 @@
 *.exe
 *.out
 *.app
+
+.DS_Store
+
+build
+cmake-build*
+out
+vs
+.idea
+.vscode
+.vs
+
+
+# rendered pictures
+result.png
+
+# latex build files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
