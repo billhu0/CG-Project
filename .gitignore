@@ -5,7 +5,11 @@
 *.slo
 *.lo
 *.o
-*.obj
+# *.obj
+assets/stanford_bunny.obj
+assets/stanford_dragon.obj
+assets/short_box.obj
+assets/tall_box.obj
 
 # Precompiled Headers
 *.gch

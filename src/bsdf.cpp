@@ -1,40 +1,67 @@
 #include "bsdf.h"
 #include "utils.h"
 
+#include <utility>
 
-Vec3f IdealDiffusion::evaluate(Interaction &interaction) const {
-    return color / PI;
+const float default_delta = 1e-7;
+
+IdealDiffusion::IdealDiffusion(const Vec3f &color) : color(color) {}
+
+Vec3f IdealDiffusion::evaluate(Interaction &interaction) const {  
+  return color * INV_PI;
 }
 
 float IdealDiffusion::pdf(Interaction &interaction) const {
-    // cos-theta / pi
-    return interaction.normal.dot(interaction.wi) / PI;
+  // TODO: your implementation here
+  float cos_theta = interaction.normal.dot(-interaction.wi);
+  return cos_theta * INV_PI;
 }
 
-Vec3f IdealDiffusion::sample(Interaction &interaction, Sampler &sampler) const {
-    // Get a uniform distribution sample in [0,1]^2
-    Vec2f sample = sampler.get2D();
-
-    // Transform the sample into a point on the hemisphere
-    const float theta = std::acos(std::sqrt(1.f - sample.y()));
-    const float phi = 2.f * PI * sample.x();
-
-    // Polar coordinate on the sphere should be
-    // (sin theta * cos phi, sin theta * sin phi, cos theta)
-    Vec3f hemisphere_wi = Vec3f(std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta));
-
-    Mat3f transform = Eigen::Quaternionf::FromTwoVectors(Vec3f{0.f, 0.f, 1.f}, interaction.normal).toRotationMatrix();
-    interaction.wi = (transform * hemisphere_wi).normalized();
-
-    return interaction.wi;
+float IdealDiffusion::sample(Interaction &interaction, Sampler &sampler) const {
+  Vec2f  epsilon = sampler.get2D();
+  float r = sqrtf(epsilon.x()), phi = 2.0f * PI * epsilon.y();
+  float x = r * cosf(phi), y = r * sinf(phi); 
+  float z = sqrtf(std::max(0.0f, 1.0f - x * x - y * y));
+  Vec3f local_wi(-x, -y, -z);
+  
+  float rotate_theta = acosf(Vec3f(0, 0, 1).dot(interaction.normal));
+  Vec3f rotate_axis = Vec3f(0, 0, 1).cross(interaction.normal).normalized();
+  Eigen::AngleAxisf rotationVec(rotate_theta, rotate_axis);
+  Eigen::Matrix3f rotation_matrix = rotationVec.toRotationMatrix();
+  interaction.wi = (rotation_matrix * local_wi).normalized();
+  float cos_theta = interaction.normal.dot(-interaction.wi);
+  return cos_theta * INV_PI;
 }
-
-// return whether the bsdf is perfect transparent or perfect reflection
+/// return whether the bsdf is perfect transparent or perfect reflection
 bool IdealDiffusion::isDelta() const {
-    return false;
+  return false;
 }
 
-// return whether the bsdf is perfect transparent or perfect reflection
+//Ideal Specular
+IdealSpecular::IdealSpecular(const Vec3f &color) : color(color) {}
+
+Vec3f 
+IdealSpecular::evaluate(Interaction &interaction) const {  
+  return color * pdf(interaction);
+}
+
+float
+IdealSpecular::pdf(Interaction &interaction) const{
+  Vec3f reflect = (-interaction.wo + 2.0f * interaction.wo.dot(interaction.normal) * interaction.normal).normalized();
+  if((reflect + interaction.wi).norm() < default_delta)
+  {
+    return 1.0f;
+  }
+  else return 0.0f;
+}
+
+float
+IdealSpecular::sample(Interaction &interaction, Sampler &sampler) const
+{
+  interaction.wi = (interaction.wo - 2.0f * interaction.wo.dot(interaction.normal) * interaction.normal).normalized();
+  return 1.0f;
+}
+
 bool IdealSpecular::isDelta() const {
-    return true;
+  return true;
 }

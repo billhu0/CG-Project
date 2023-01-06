@@ -29,13 +29,7 @@
       "color" : [0.63, 0.065, 0.05],
       "type" : "diffuse",
       "name" : "red_diffuse"
-    },    
-    {
-      "color" : [0.725, 0.71, 0.68],
-      "type" : "specular",
-      "name" : "grey_specular"
     }
-
   ],
   "objects" : [
     {
@@ -75,7 +69,7 @@
     },
     {
       "obj_file_path" : "../assets/back.obj",
-      "material_name" : "grey_specular",
+      "material_name" : "grey_diffuse",
       "translate": [0,0,0],
       "scale" : 1,
       "has_bvh" : false
