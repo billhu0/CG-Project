@@ -27,7 +27,7 @@ class BezierSurface {
 
   BezierSurface(int m, int n, Vec2f range_u, Vec2f range_v);
   void setControlPointAndWeight(int i, int j, Vec3f point, float weight);
-  Vertex evaluate(std::vector<std::vector<Vec4f>>& control_points, float u, float v);
-  Vertex evaluate(float u, float v);
+  Vertex evaluate(const std::vector<std::vector<Vec4f>>& control_points, float u, float v) const;
+  Vertex evaluate(float u, float v) const;
 };
 #endif

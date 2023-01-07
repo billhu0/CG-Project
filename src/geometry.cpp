@@ -4,7 +4,7 @@
 #include <iostream>
 #include <queue>
 
-int debug_flag = 0;
+constexpr const int debug_flag = 0;
 
 void Mesh::setMaterial(std::shared_ptr<BSDF> &new_bsdf) {
   bsdf = new_bsdf;
@@ -291,14 +291,109 @@ PatchMesh::buildBVH()
 }
 
 void 
-PatchMesh::lbvhHit(Interaction &Interaction, Ray &ray) const
+PatchMesh::lbvhHit(Interaction &interaction, Ray &ray) const
 {
+  // TODO: Use the same BVH traversal to traverse the AABB.
+  // When reaches a leaf node, call `intersectOnePatch` to determine the nearest intersection.
+  std::queue<int> Node_index;
+  Node_index.push(0);
+  for(; !Node_index.empty();)
+  {
+    int now_index = Node_index.front();
+    Node_index.pop();
+    auto now = lbvh[now_index];
+    float t_in, t_out;
+    if(now.aabb.intersect(ray, &t_in, &t_out))
+    {
+      if(now.num != -1)
+      {
+        for(int j = 0; j < now.num; ++ j)
+        {
+          int i = patch_indices[now.triangle_offset + j];
+          Interaction temp;
+        
+          if (intersectOnePatch(ray, temp, patches[i]) && (temp.dist < interaction.dist)) {
+            interaction = temp;
+          }
+        }
+      }
+      else
+      {
+        Node_index.push(now_index + 1);
+        Node_index.push(now_index + now.node_offset);
+      }
+    }
+  }
   return;
 }
 
 bool
 PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSurface &patch) const
 {
+
+  // Write the ray (o+td) as an intersection of two planes.
+  // 把 ray (o+td形式) 写成两个平面的交点形式
+  Vec3f N1, N2;
+  if (std::abs(ray.direction.x()) > std::abs(ray.direction.y()) && std::abs(ray.direction.x()) > std::abs(ray.direction.z())) {
+    N1 = Vec3f(ray.direction.y(), -ray.direction.x(), 0);
+  } else {
+    N1 = Vec3f(0, ray.direction.z(), -ray.direction.y());
+  }
+  N1.normalize();
+  N2 = N1.cross(ray.direction).normalized();
+  
+  float d1 = -N1.dot(ray.origin);
+  float d2 = -N2.dot(ray.origin);
+
+  constexpr float eps = 1e-6;
+  constexpr int MAX_ITER = 7;
+
+
+  // TODO: write Newton Root-Finder here?
+  float error_prev = std::numeric_limits<float>::max();
+  // u, v are the initial guess of the intersection point
+  const float u_initial = 0.5f, v_initial = 0.5f;
+  float u = u_initial, v = v_initial;
+  for (int iter = 0; iter < MAX_ITER; ++iter) {
+    // S = evaluate surface (u, v)
+    Vertex S = patch.evaluate(u, v);    
+    Vec2f R = Vec2f(N1.dot(S.position) + d1, N2.dot(S.position) + d2);
+    float error = std::abs(R.x()) + std::abs(R.y());
+    if (error < eps) {
+
+      // Compute the intersection point
+      // Update the interaction variables
+      interaction.pos = S.position;
+      interaction.dist = (S.position - ray.origin).norm();
+      interaction.normal = (patch.evaluate(u+eps, v).position - patch.evaluate(u-eps, v).position).cross(patch.evaluate(u, v+eps).position - patch.evaluate(u, v-eps).position).normalized();
+      // interaction.material = ? ;
+      interaction.wi = ray.direction;
+      interaction.wo = -ray.direction;
+      interaction.type = Interaction::Type::GEOMETRY;
+      return true;
+    }
+    if (std::abs(error) > error_prev) {
+      return false;
+    }
+    error_prev = std::abs(error);
+
+    // J = compute Jacobian matrix
+    // FIXME: 这里是 S_u(u, v), 应该不能直接patch.evaluate?
+    Vec2f Fu = {N1.dot(patch.evaluate(u+eps, v).position), N2.dot(patch.evaluate(u+eps, v).position) + d2};
+    Vec2f Fv = {N1.dot(patch.evaluate(u, v+eps).position) + d1, N2.dot(patch.evaluate(u, v+eps).position)};
+    Mat2f J;
+    J.col(0) = Fu;
+    J.col(1) = Fv;
+
+    // if J is singular
+    if (std::abs(J.determinant()) < eps) {
+      u += 0.1 * (u_initial - u) * drand48();
+      v += 0.1 * (v_initial - v) * drand48();
+    } else {
+      u -= J.inverse().col(0).dot(R);
+      v -= J.inverse().col(1).dot(R);
+    }
+  }
   return false;
 }
 

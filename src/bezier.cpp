@@ -84,7 +84,7 @@ void BezierSurface::setControlPointAndWeight(int i, int j, Vec3f point, float we
 /**
  * TODO: evaluate the point at (u, v) with the given control points(m deriction)
  */
-Vertex BezierSurface::evaluate(std::vector<std::vector<Vec4f>>& control_points, float u, float v) 
+Vertex BezierSurface::evaluate(const std::vector<std::vector<Vec4f>>& control_points, float u, float v) const
 {
   std::vector<Vec3f> line;
   std::vector<float> weight;
@@ -101,7 +101,7 @@ Vertex BezierSurface::evaluate(std::vector<std::vector<Vec4f>>& control_points, 
   return point;
 }
 
-Vertex BezierSurface::evaluate(float u, float v){
+Vertex BezierSurface::evaluate(float u, float v) const{
   Vertex point_n, point_m, point;
   point_m = evaluate(control_points_m_, u, v);
   point_n = evaluate(control_points_n_, v, u);

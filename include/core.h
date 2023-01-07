@@ -16,6 +16,7 @@ using Vec2f = Eigen::Vector2f;
 using Vec2i = Eigen::Vector2i;
 using Vec4f = Eigen::Vector4f;
 using Mat3f = Eigen::Matrix3f;
+using Mat2f = Eigen::Matrix2f;
 
 
 constexpr float RAY_DEFAULT_MIN = 1e-5;
