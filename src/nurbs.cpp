@@ -264,6 +264,7 @@ NURBSSurface::setKnotNUniform()
 std::shared_ptr<PatchMesh> 
 NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
 {
+
     float C = 1.0f;
     //generate V and A
     std::vector<std::vector<Vec3f>> V_m, V_n, A_m, A_n;
@@ -290,8 +291,8 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
         A_n[i][0] = Vec3f(0, 0, 0);
         for(int j = 1; j < m; ++ j)
         {
-            V_n[i][j] = degree_m_ * (control_points_n_[i][j] - control_points_n_[i][j - 1]) / (knots_m_[j + degree_n_] - knots_m_[j]);
-            A_n[i][j] = (degree_m_ - 1) * (V_n[i][j] - V_n[i][j - 1]) / (knots_m_[j + degree_n_ - 1] - knots_m_[j]);
+            V_n[i][j] = degree_m_ * (control_points_n_[i][j] - control_points_n_[i][j - 1]) / (knots_m_[j + degree_m_] - knots_m_[j]);
+            A_n[i][j] = (degree_m_ - 1) * (V_n[i][j] - V_n[i][j - 1]) / (knots_m_[j + degree_m_ - 1] - knots_m_[j]);
         }
     }
 
@@ -313,7 +314,7 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
             {
                 auto tmp = A_n[j][k].norm();
                 maxa = maxa > tmp ? maxa : tmp;
-                sumv = V_n[j][k].norm();
+                sumv += V_n[j][k].norm();
             }
             int N = C * maxa * powf(delta, 1.5f) / powf(sumv / degree_m_, 0.5f);
             knots_m_addnum[i] = knots_m_addnum[i] > N ? knots_m_addnum[i] : N;
@@ -355,9 +356,9 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
     for(int i = 0; i < knots_m_.size() - 1; ++ i) 
     {
         if(knots_m_[i] == knots_m_[i + 1]) continue;
-        int vd = knots_n_addnum[i] + 1;
+        int vd = knots_m_addnum[i] + 1;
         float delta = (knots_m_[i + 1] - knots_m_[i]) / vd;
-        for(int j = 0; j < knots_m_addnum[i]; ++ j)
+        for(int j = 1; j <= knots_m_addnum[i]; ++ j)
         {
             float t = knots_m_[i] + j * delta;
             for(int k = 0; k < control_points_n_.size(); ++ k)
@@ -402,11 +403,14 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
     }
 
     //close n direction
-    for(int i = degree_m_ + 1; i < new_knots_length_m - 1 - degree_m_; ++ i)
+    int length_m = new_knots_length_m;
+    auto x_knots_m = new_knots_m_;
+    for(int i = degree_m_ + 1; i < length_m - 1 - degree_m_; ++ i)
     {
         for(int j = 0; j < degree_m_ - 1; ++ j)
         {
-            float t = new_knots_m_[i];
+            float t = x_knots_m[i];
+            // printf("%f\n", t);
             for(int k = 0; k < control_points_n_.size(); ++ k)
             {
                 std::vector<Vec3f> tmp_controlpoints;
@@ -441,6 +445,8 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
                 else
                 {
                     new_knots_m_[k + 1] = t;
+                    // for(auto x : new_knots_m_) printf("%f ", x);
+                    // printf("\n");
                     break;
                 }
             }
@@ -451,7 +457,7 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
     //refine the m direction
     std::vector<std::vector<Vec3f>> new_control_points_m;
     std::vector<std::vector<float>> new_w_m;
-    int m = new_control_points_n[0].size();
+    m = new_control_points_n[0].size();
     new_control_points_m.resize(m);
     new_w_m.resize(m);
     for(int i = 0; i < m; ++ i)
@@ -466,7 +472,7 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
         }
     }
     std::vector<float> new_knots_n_;
-    new_knots_n_.resize(knots_n_.size() + n_add_sum);
+    new_knots_n_.resize(knots_n_.size() + n_add_sum * degree_n_);
     int new_knots_length_n = 0;
     for(int i = 0; i < knots_n_.size(); ++ i) new_knots_n_[i] = knots_n_[i];
     new_knots_length_n = knots_n_.size();
@@ -519,11 +525,13 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
         }
     }
     //close the m direction
-    for(int i = degree_n_ + 1; i < new_knots_length_n - 1 - degree_n_; ++ i)
+    int length_n = new_knots_length_n;
+    auto x_knots_n = new_knots_n_;
+    for(int i = degree_n_ + 1; i < length_n - 1 - degree_n_; ++ i)
     {
         for(int j = 0; j < degree_n_ - 1; ++ j)
         {
-            float t = new_knots_n_[i];
+            float t = x_knots_n[i];
             for(int k = 0; k < m; ++ k)
             {
                 std::vector<Vec3f> tmp_controlpoints;
@@ -571,7 +579,7 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
         if(new_knots_m_[i] == new_knots_m_[i + 1]) continue;
         for(int j = 0; j < new_knots_length_n - 1; ++ j)
         {
-            if(new_knots_n_[i] == new_knots_n_[i + 1]) continue;
+            if(new_knots_n_[j] == new_knots_n_[j + 1]) continue;
             BezierSurface patch(degree_m_ + 1, degree_n_ + 1, Vec2f(new_knots_m_[i], new_knots_m_[i + 1]), Vec2f(new_knots_n_[j], new_knots_n_[j + 1]));
             int a = 0, b = 0;
             for(int k = i - degree_m_; k <= i; ++ k)
@@ -582,6 +590,7 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
                     ++ b;
                 }
                 ++ a;
+                b = 0;
             }
             patches.push_back(patch);
         }

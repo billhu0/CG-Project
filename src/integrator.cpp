@@ -21,6 +21,7 @@ void Integrator::render() const {
     sampler.setSeed(omp_get_thread_num());
     for (int dy = 0; dy < resolution.y(); dy++) {
       Vec3f L(0, 0, 0);
+      // printf("%d %d\n", dx, dy);
       // TODO: generate #spp rays for each pixel and use Monte Carlo integration to compute radiance.
       for(int i = 0; i < spp; ++ i)
       {
