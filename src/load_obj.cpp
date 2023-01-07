@@ -134,10 +134,15 @@ std::vector<NURBSSurface> loadNURBS(const std::string& path_to_obj)
     return retval;
 }
   
-std::vector<std::shared_ptr<TriangleMesh>> makeNURBSObject(const std::string& path_to_obj, const Vec3f& translation, float scale) {
-
-    std::vector<std::shared_ptr<TriangleMesh>> retval;
+std::vector<std::shared_ptr<Mesh>> makeNURBSObject(const std::string& path_to_obj, const Vec3f& translation, float scale) {
+    std::vector<std::shared_ptr<Mesh>> retval;
     auto NURBS_objs = loadNURBS(path_to_obj);
-    for(auto nurbs : NURBS_objs) retval.push_back(nurbs.genObject_uniformsample(translation, scale));
+    for(auto nurbs : NURBS_objs)
+    {
+      if(NURBS_WITH_MESH)
+        retval.push_back(nurbs.genMesh_triangle(translation, scale));
+      else
+        retval.push_back(nurbs.genMesh_patch(translation, scale));
+    }
     return retval;
 }

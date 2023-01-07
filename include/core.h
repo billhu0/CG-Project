@@ -23,9 +23,13 @@ constexpr float RAY_DEFAULT_MAX = 1e7;
 constexpr float PI = 3.141592653579f;
 constexpr float INV_PI = 0.31830988618379067154;
 constexpr float EPS = 1e-5;
-
-
+constexpr bool NURBS_WITH_MESH = true;
 class BSDF;
 class Sampler;
+
+struct Vertex {
+  Vec3f position;
+  Vec3f normal;
+};
 
 #endif //CORE_H_

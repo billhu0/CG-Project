@@ -163,7 +163,7 @@ NURBSSurface::evaluate(float u, float v)
 }
 
 std::shared_ptr<TriangleMesh> 
-NURBSSurface::genObject_uniformsample(const Vec3f& translation, float scale)
+NURBSSurface::genMesh_triangle(const Vec3f& translation, float scale)
 {
     std::vector<Vec3f> vertices;
     std::vector<Vec3f> normals;
@@ -259,6 +259,12 @@ NURBSSurface::setKnotNUniform()
         else if(i > n) knots_n_[i] = (float)1.0;
         else knots_n_[i] = (float)(i - degree_n_) * delta;
     }
+}
+
+std::shared_ptr<PatchMesh> 
+NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
+{
+    UNIMPLEMENTED;
 }
 
 // Object 

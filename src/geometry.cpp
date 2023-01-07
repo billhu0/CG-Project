@@ -6,6 +6,10 @@
 
 int debug_flag = 0;
 
+void Mesh::setMaterial(std::shared_ptr<BSDF> &new_bsdf) {
+  bsdf = new_bsdf;
+}
+
 TriangleMesh::TriangleMesh(std::vector<Vec3f> vertices, std::vector<Vec3f> normals,
                            std::vector<int> v_index, std::vector<int> n_index) :
     vertices(std::move(vertices)),
@@ -42,9 +46,6 @@ void TriangleMesh::print_triangle_mesh()
   for (auto index : n_indices) printf ("%d ", index);
 }
 
-void TriangleMesh::setMaterial(std::shared_ptr<BSDF> &new_bsdf) {
-  bsdf = new_bsdf;
-}
 
 const AABB TriangleMesh::getTriangle(int pos)
 {
@@ -271,6 +272,36 @@ void TriangleMesh::lbvhHit(Interaction &interaction, Ray &ray) const
   }
   return;
 }
+
+PatchMesh::PatchMesh(std::vector<BezierSurface> &bezier_patches)
+{
+  patches = bezier_patches;
+}
+
+bool
+PatchMesh::intersect(Ray &ray, Interaction &interaction) const
+{
+  return false;
+}
+
+void
+PatchMesh::buildBVH()
+{
+  return;
+}
+
+void 
+PatchMesh::lbvhHit(Interaction &Interaction, Ray &ray) const
+{
+  return;
+}
+
+bool
+PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSurface &patch) const
+{
+  return false;
+}
+
 
 // void TriangleMesh::bvhHit(BVHNode *p, Interaction &interaction,
 //                           Ray &ray) const {

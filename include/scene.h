@@ -14,12 +14,14 @@ class Scene {
  public:
   Scene() = default;
   void addObject(std::shared_ptr<TriangleMesh> &geometry);
+  void addObject(std::shared_ptr<PatchMesh> &geometry);
+  void addObject(std::shared_ptr<Mesh> &geometry);
   [[nodiscard]] const std::shared_ptr<Light> &getLight() const;
   void setLight(const std::shared_ptr<Light> &new_light);
   bool isShadowed(Ray &shadow_ray);
   bool intersect(Ray &ray, Interaction &interaction);
  private:
-  std::vector<std::shared_ptr<TriangleMesh>> objects;
+  std::vector<std::shared_ptr<Mesh>> objects;
   std::shared_ptr<Light> light;
 };
 

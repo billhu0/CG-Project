@@ -8,6 +8,15 @@ void Scene::addObject(std::shared_ptr<TriangleMesh> &mesh) {
   objects.push_back(mesh);
 }
 
+void Scene::addObject(std::shared_ptr<PatchMesh> &mesh) {
+  objects.push_back(mesh);
+}
+
+void Scene::addObject(std::shared_ptr<Mesh> &mesh) {
+  objects.push_back(mesh);
+}
+
+
 void Scene::setLight(const std::shared_ptr<Light> &new_light) {
   light = new_light;
 }

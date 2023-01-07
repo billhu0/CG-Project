@@ -13,6 +13,6 @@ std::shared_ptr<TriangleMesh> makeMeshObject(std::string path_to_obj, Vec3f tran
 
 std::vector<NURBSSurface> loadNURBS(const std::string& path_to_obj);
 
-std::vector<std::shared_ptr<TriangleMesh>> makeNURBSObject(const std::string& path_to_obj, const Vec3f& translation, float scale);
+std::vector<std::shared_ptr<Mesh>> makeNURBSObject(const std::string& path_to_obj, const Vec3f& translation, float scale);
 
 #endif //LOAD_OBJ_H_

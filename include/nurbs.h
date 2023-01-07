@@ -5,11 +5,6 @@
 #include "core.h"
 #include "geometry.h"
 
-struct Vertex {
-  Vec3f position;
-  Vec3f normal;
-};
-
 class NURBSCurve{
     private:
         std::vector<Vec3f> control_points_;
@@ -48,7 +43,8 @@ class NURBSSurface{
         void setKnotN(int i, float knot);
         void setKnotNUniform();
         Vertex evaluate(float u, float v);
-        std::shared_ptr<TriangleMesh> genObject_uniformsample(const Vec3f& translation, float scale);
+        std::shared_ptr<TriangleMesh> genMesh_triangle(const Vec3f& translation, float scale);
+        std::shared_ptr<PatchMesh> genMesh_patch(const Vec3f& translation, float scale);
         // Object genObject_adaptivesample(float tolerance);
 };
 
