@@ -281,12 +281,166 @@ PatchMesh::PatchMesh(std::vector<BezierSurface> &bezier_patches)
 bool
 PatchMesh::intersect(Ray &ray, Interaction &interaction) const
 {
-  return false;
+  lbvhHit(interaction, ray);
+  return interaction.type != Interaction::Type::NONE;
+}
+
+const AABB PatchMesh::getPatch(int pos)
+{
+  return patch_AABB[pos];
+}
+
+void 
+PatchMesh::genAABB_for_BVH(BVHNode* now)
+{
+  now->aabb = getPatch(now->begin);
+  for(int i = 1; i < now->num; ++ i)
+  {
+    now->aabb = AABB(getPatch(now->begin + i), now->aabb);
+  }
+  return;
+}
+
+float PatchMesh::calCost(AABB a, int numa, AABB b, int numb, AABB N)
+{
+  return a.getSurfaceArea() / N.getSurfaceArea() * numa + b.getSurfaceArea() / N.getSurfaceArea() * numb;
+}
+
+int PatchMesh::getPartitionMethod(BVHNode* now)
+{
+  int l = now->begin, r = now->begin + now->num - 1;
+  int num = now->num;
+  int lsize = 1;
+  std::vector<AABB> lprefix_AABB, rprefix_AABB;
+  lprefix_AABB.push_back(AABB(getPatch(l)));
+  rprefix_AABB.push_back(AABB(getPatch(r)));
+  for(int i = 1; i < num; ++ i)
+  {
+    lprefix_AABB.push_back(AABB(lprefix_AABB[i - 1], getPatch(l + i)));
+    rprefix_AABB.push_back(AABB(rprefix_AABB[i - 1], getPatch(r - i)));
+  }
+  float cost = calCost(lprefix_AABB[0], 1, rprefix_AABB[num - 2], num - 1, now->aabb);
+  for(int size = 2; size < num - 1; ++ size)
+  {
+    float tmpcost = calCost(lprefix_AABB[size - 1], size, rprefix_AABB[num - size - 1], num - size, now->aabb);
+    if(cost > tmpcost)
+    {
+      cost = tmpcost;
+      lsize = size;
+    }
+  }
+  return lsize;
+}
+
+void PatchMesh::sort_aabb(int begin, int end, int axis)
+{
+  if(begin >= end) return;
+  // if(debug_flag == 1) printf("%d %d\n", begin, end);
+  AABB pivot_aabb = patch_AABB[begin];
+  int pivot_index = patch_indices[begin];
+  int l = begin, r = end, indx = begin;
+
+  for(;r > l;)
+  {
+    for(;r > l;)
+    {
+      if(patch_AABB[r].getCenter()[axis] < pivot_aabb.getCenter()[axis])
+      {
+        patch_AABB[l] = patch_AABB[r];
+        patch_indices[l] = patch_indices[r];
+        indx = r;
+        l ++;
+        break;
+      }
+      r --;
+    }
+    for(; r > l;)
+    {
+      if(patch_AABB[l].getCenter()[axis] > pivot_aabb.getCenter()[axis])
+      {
+        patch_AABB[r] = patch_AABB[l];
+        patch_indices[r] = patch_indices[l];
+        indx = l;
+        r --;
+        break;
+      }
+      l ++;
+    }
+  }
+  patch_AABB[indx] = pivot_aabb;
+  patch_indices[indx] = pivot_index;
+
+  sort_aabb(begin, indx - 1, axis);
+  sort_aabb(indx + 1, end, axis);
+  return;
+}
+
+void PatchMesh::buildBVH_partition(BVHNode* now, int pre_axis)
+{
+  genAABB_for_BVH(now);
+  // printf("%d %d\n", now->begin, now->num);
+  // printf("%f %f %f\n", now->aabb.getDist(0), now->aabb.getDist(1), now->aabb.getDist(2));
+  if(now->num <= 25) return;
+  float dis = now->aabb.getDist(0);
+  now->partition_axis = 0;
+  for(int i = 1; i < 3; ++ i)
+  {
+    if(dis < now->aabb.getDist(i))
+    {
+      dis = now->aabb.getDist(i);
+      now->partition_axis = i;
+    }
+  }
+
+  // sort [begin, begin + num]
+  int num = now->num, begin = now->begin;
+  // printf("o\n");
+  // if(num == 217853 && begin == 0) debug_flag = 1;
+  if(pre_axis != now->partition_axis)
+      sort_aabb(begin, begin + num - 1, now->partition_axis);
+  // printf("f\n");
+  int leftnum = getPartitionMethod(now);
+  now->left = new BVHNode();
+  now->left->num = leftnum;
+  now->left->begin = begin;
+  now->right = new BVHNode();
+  now->right->num = num - leftnum;
+  now->right->begin = begin + now->left->num;
+  buildBVH_partition(now->left, now->partition_axis);
+  buildBVH_partition(now->right, now->partition_axis);
+  return;
+}
+
+int PatchMesh::DFS_BVHTree(BVHNode* now)
+{
+  lbvh.push_back(LBVH());
+  int pos = lbvh.size() - 1; 
+  if(now->partition_axis == -1)
+  {
+    lbvh[pos].set(now, -1);
+    return 1;
+  }
+  int lsize = DFS_BVHTree(now->left);
+  int rsize = DFS_BVHTree(now->right);
+  lbvh[pos].set(now, lsize + 1);
+  return lsize + rsize + 1;
 }
 
 void
 PatchMesh::buildBVH()
 {
+  BVHNode *bvh;
+  for(int i = 0; i < patches.size(); ++ i)
+  {
+    patch_AABB.push_back(AABB(patches[i]));
+    patch_indices.push_back(i);
+  }
+  bvh = new BVHNode();
+  bvh->num = patch_AABB.size();
+  bvh->begin = 0;
+  buildBVH_partition(bvh, -1);
+  DFS_BVHTree(bvh);
+  delete bvh;
   return;
 }
 

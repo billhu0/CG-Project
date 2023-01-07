@@ -70,6 +70,13 @@ class PatchMesh : public Mesh{
   protected:
     void lbvhHit(Interaction &Interaction, Ray &ray) const;
     bool intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSurface &patch) const;
+    const AABB getPatch(int pos);
+    void genAABB_for_BVH(BVHNode* now);
+    float calCost(AABB a, int numa, AABB b, int numb, AABB N);
+    int getPartitionMethod(BVHNode* now);
+    void sort_aabb(int begin, int end, int axis);
+    void buildBVH_partition(BVHNode* now, int pre_axis);
+    int DFS_BVHTree(BVHNode* now);
 
     std::vector<BezierSurface> patches;
     std::vector<AABB> patch_AABB;

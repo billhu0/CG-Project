@@ -3,6 +3,7 @@
 
 #include "core.h"
 #include "ray.h"
+#include "bezier.h"
 
 struct AABB {
   // the minimum and maximum coordinate for the AABB
@@ -14,6 +15,8 @@ struct AABB {
   AABB(Vec3f low, Vec3f upper) : low_bnd(low), upper_bnd(upper) {}
   /// construct an AABB from three vertices of a triangle.
   AABB(const Vec3f &v1, const Vec3f &v2, const Vec3f &v3);
+  /// construct an AABB from the bezier surface
+  AABB(const BezierSurface &patch); 
   /// Construct AABB by merging two AABBs
   AABB(const AABB &a, const AABB &b);
   bool intersect(const Ray &ray, float *t_in, float *t_out);
