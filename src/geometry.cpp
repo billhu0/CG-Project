@@ -484,7 +484,6 @@ PatchMesh::lbvhHit(Interaction &interaction, Ray &ray) const
 bool
 PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSurface &patch) const
 {
-
   // Write the ray (o+td) as an intersection of two planes.
   // 把 ray (o+td形式) 写成两个平面的交点形式
   Vec3f N1, N2;
@@ -506,7 +505,7 @@ PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSur
   // TODO: write Newton Root-Finder here?
   float error_prev = std::numeric_limits<float>::max();
   // u, v are the initial guess of the intersection point
-  const float u_initial = 0.5f, v_initial = 0.5f;
+  const float u_initial = patch.range_u_.x(), v_initial = patch.range_v_.x();
   float u = u_initial, v = v_initial;
   for (int iter = 0; iter < MAX_ITER; ++iter) {
     // S = evaluate surface (u, v)
