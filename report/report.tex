@@ -23,7 +23,7 @@
 \lstset{basicstyle=\ttfamily}
 
 % Title portion
-\title{Final Project: {Ray Tracing NURBS surfaces}}
+\title{CS171 Final Project: {Ray Tracing NURBS surfaces}}
 
 \author{Group Number:\quad 10 \\
 Member 1:\quad Xiyue Peng\\
@@ -38,11 +38,213 @@ Member 2:\quad Luojia Hu
 
 \section{Introduction}
 
+In this project, we implemented an algorithm for directly ray tracing NURBS surfaces without generating mesh first and ray tracing the mesh. % By ray tracing NURBS directly, we can avoid the dilemma that we have to generate a fine enough mesh while maintaining a reasonable memory usage and computation time. 
+
 \section{Implementation Details}
 
+In this section, we will discuss the NURBS surface representation and the `direct' ray tracing NURBS algorithm we implemented.
+
+\subsection{NURBS Surface Representation}
+
+% 这里介绍一下NURBS
+
+A \textbf{Non-Uniform Rational B-spline Surface}, or \textbf{NURBS}, is a generalization of B-spline surfaces. It is defined by a set of control points, a set of weights, and a set of knot vectors. The control points are the vertices of the surface, and the weights are the weights of the vertices. The knot vectors are the knot vectors of the surface. The surface is defined by the following equation: 
+
+\begin{equation}
+	\label{eq:1} % TODO: 公式没改完
+	\mathbf{S}^w(u,v) = \sum_{i=0}^{M-1} \sum_{j=0}^{N-1} \mathbf{P}_{i,j}^w w_{i,j} B_{i,p}(u) B_{j,q}(v) P_{i,j}
+\end{equation}
+
+where $B_{i,p}(u)$ is the $i$th B-spline basis function of degree $p$ at $u$, $P_{i,j}$ is the $i$th control point of the $j$th row, and $w_{i,j}$ is the weight of the $i$th control point of the $j$th row. The degree of the surface is $p$ in the $u$ direction and $q$ in the $v$ direction. The surface is defined on the domain $[u_{0}, u_{n+p+1}] \times [v_{0}, v_{m+q+1}]$, where $u_{0} = v_{0} = 0$ and $u_{n+p+1} = v_{m+q+1} = 1$. The knot vectors are defined as follows:
+
+\begin{equation}
+\label{eq:2}
+u_{i} = \begin{cases}
+0 & \text{if } i \leq p \\
+\frac{i-p}{n+1} & \text{if } p < i \leq n \\
+1 & \text{if } i > n
+\end{cases}
+\end{equation}
+
+\begin{equation}
+\label{eq:3}
+v_{j} = \begin{cases}
+0 & \text{if } j \leq q \\
+\frac{j-q}{m+1} & \text{if } q < j \leq m \\
+1 & \text{if } j > m
+\end{cases}
+\end{equation}
+
+where $n$ and $m$ are the number of control points in the $u$ and $v$ directions, respectively. The knot vectors are non-decreasing, and the knot vectors are clamped at the ends. The knot vectors are also called \textbf{clamped knot vectors}.
+
+\subsection{Creating BVH for NURBS}
+
+% TODO: 这里介绍一下如何用NURBS创建BVH (描述细分过程等等)
+
+Similar to what we did in ray tracing a Triangle Mesh, we need to create a BVH for the NURBS surface. The difference is that we need to subdivide the original NURBS surface's control points into a \textbf{refined control mesh}, instead of calculating triangle mesh coordinates directly. 
+
+Flattening TODO:
+
+BVH TODO:
+
+In order for an accurate initial guess during intersection test, we need to refine, or subdivide the control mesh into a finer one. We use a curvature-based refinement of knot vectors. The number of knots going to be added is based on the curvature of the surface (?). 
+
+\[
+	n_1 = C_1 \cdot \max_{t_i, t_{i+1}} \{ curvatre \}	
+\]
+
+\subsection{Ray Tracing NURBS Directly}
+
+\subsubsection{Transform ray equation}
+% 我们需要把一条ray从o+td的形式，写成两个平面的交集的形式
+\ 
+
+Recall that a ray can be represented by $\mathbf{r} = \mathbf{o} + t \mathbf{d}$, where $\mathbf{o}$ is the ray's origin and $\mathbf{d}$ is the normalized direction. However in order for ray intersection test for NURBS, we will rewrite the ray $\mathbf{r}$ as the intersection of two planes, namely $\{ \mathbf{p} | \mathbf{P_1} \cdot (\mathbf{p}, 1) = 0 \}$ and $\{ \mathbf{p} | \mathbf{P_2} \cdot (\mathbf{p}, 1) = 0 \}$ where 
+\[
+	\mathbf{P}_1 = (\mathbf{N}_1, d_1), 
+	\mathbf{P}_2 = (\mathbf{N}_2, d_2)	
+\]
+
+The parameters, namely $\mathbf{N}_1$, $\mathbf{N}_2$, $d_1$, and $d_2$, are calculated by the original ray parameter $\mathbf{o}$ and $\mathbf{d}$, determined by the following equations:
+
+The normal vector of the first plane is always perpendicular to the ray direction $\mathbf{d}$.  
+\[
+	\mathbf{N}_1 = \mathrm{normalize}\left( \begin{cases}
+		\left(\mathbf{d}_y, -\mathbf{d}_x, 0\right)
+		\mathrm{\ if\ } |\mathbf{d}_x| > |\mathbf{d}_y| \mathrm{\ and\ } |\mathbf{d}_x| > |\mathbf{d}_z| \\
+		\left(0, \mathbf{d}_x, -\mathbf{d}_y\right)
+		\mathrm{\ otherwise}
+	\end{cases}	\right)
+\]
+
+The normal vector of the second plane is 
+\[
+	\mathbf{N}_2 = \mathrm{normalize}\left( \mathbf{N}_1 \times \mathbf{d} \right)
+\]
+
+The distance of the two planes from the origin is
+\[
+	d_1 = -\mathbf{N}_1 \cdot \mathbf{o}	
+\]
+\[
+	d_2 = -\mathbf{N}_2 \cdot \mathbf{o}	
+\]
+
+As shown in \ref{fig:ray-plane-intersection}, the first plane is perpendicular to the ray direction $\mathbf{d}$, with a normal lying in $xy$-plane or $xz$-plane, depending on the largest magnitude of the components of the direction. The second plane is perpendicular to both the ray direction $\mathbf{d}$ and the first plane's normal vector $\mathbf{N}_1$.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.5\textwidth]{pictures/ray-plane.jpg}
+	\caption{The intersection-of-plane representation of a ray. If $|\mathbf{d}_x| > |\mathbf{d}_y| \mathrm{\ and\ } |\mathbf{d}_x| > |\mathbf{d}_z|$ holds, the first plane is rotated about the $z$-axis and the other plane is perpendicular to it (a). If it does not holds, the first plane is instead rotated about the $x$-axis(b)}.
+	\label{fig:ray-representation}
+\end{figure}
+
+In this way, an intersection point on the surface $\mathbf{S}$ can be found by solving the following system of equations:
+\[\begin{cases}
+	\mathbf{P}_1 \cdot (\mathbf{S}(u, v), 1) = 0\\
+	\mathbf{P}_2 \cdot (\mathbf{S}(u, v), 1) = 0
+\end{cases}\]
+
+Note that we are solving for $u$ and $v$ values during intersection, instead of direcly getting the intersection point information. That's why we are ray tracing NURBS directly.
+
+\subsubsection{Ray-Bezier-Patch Intersection Test}
+
+% 这里介绍如何计算ray和bezier patch的交点（牛顿迭代法）
+\ 
+
+One of the most important part in ray tracing NURBS is to calculate intersection between a ray and a surface patch. We are going to solve this problem by \textit{Newton-Rhapson method}. 
+
+We start from an initial guess of $u$ and $v$, which is the mid point of the valid range. We iterate the following until convergence: 
+
+\[
+	\left(\begin{matrix}
+		u_{n+1} \\ v_{n+1}
+	\end{matrix}\right)	
+	= 
+	\left(\begin{matrix}
+		u_n \\ v_n
+	\end{matrix}\right) - 
+	\left(\begin{matrix}
+		\frac{\partial f}{\partial u} & \frac{\partial f}{\partial v} \\
+		\frac{\partial g}{\partial u} & \frac{\partial g}{\partial v}
+	\end{matrix}\right)^{-1}
+	\left(\begin{matrix}
+		f(u_n, v_n) \\ g(u_n, v_n)
+	\end{matrix}\right)
+\]
+
+The Jacobian matrix is defined as \[
+	\mathbf{J} = (\mathbf{F}_u, \mathbf{F}_v)	
+\] where \[
+	\mathbf{F}_u = \left(\begin{matrix}
+		\mathbf{N}_1 \cdot \mathbf{S}_u(u, v)\\
+		\mathbf{N}_2 \cdot \mathbf{S}_u(u, v)
+	\end{matrix}\right)	
+\]\[
+	\mathbf{F}_v = \left(\begin{matrix}
+		\mathbf{N}_1 \cdot \mathbf{S}_v(u, v)\\
+		\mathbf{N}_2 \cdot \mathbf{S}_v(u, v)
+	\end{matrix}\right)	
+\]
+
+We use the following conditions to determine whether we should stop the Newton iteration. 
+
+\begin{itemize}
+	\item We limit the number of iterations to $7$. If no solution can be found after the max number of iteractions, we stop and return no intersection. According to \cite{}, the average number of iterations needed to produce convergence is 2 or 3 in practice, so $7$ is enough.
+	
+	\item If the distance to the root is nearly zero (less than a predetermined $\epsilon$ in practice), we conclude that an intersection happens. We then evaluate the intersection information (including position, normal) by the value of $u$ and $v$.
+	\[
+		\| \mathbf{F}(u_n, v_n) \| < \epsilon	
+	\]
+	Since the value of $u$, $v$ we get is approximate, it may not necessarily lie along the ray. Therefore we perform a projection along the ray direction to get the intersection point. \[
+		t = (\mathbf{P} - \mathbf{o}) \cdot \mathbf{d}	
+	\]
+
+	\item We don't allow the new estimate further from the root compared with the last estimate. That is \[
+		\| \mathbf{F}(u_{n+1}, v_{n+1}) \| >
+		\| \mathbf{F}(u_{n}, v_{n}) \|
+	\] 
+	If this happens, we assume divergence, so we stop and return no intersection.
+
+	\item We don't allow $u$ and $v$ to exceed the parametric domain of the surface. \[
+		u \notin [u_{min}, u_{max}] \mathrm{\ or\ } v \notin [v_{min}, v_{max}]	
+	\]
+	If after some iterations, the new estimate is out of the domain, we stop and return no intersection.
+\end{itemize}
+
+After each iteration, we will also assure that the Jacobian matrix $\mathbf{J}$ is not singular before updating the new estimate. To determine its singularity, we test if \[
+	\det(\mathbf{J}) = 0	
+\]
+If the Jacobian is singular, we iterate by the following equation
+\[
+	\left(\begin{matrix}
+		u_{k+1}\\v_{k+1}
+	\end{matrix}\right)	= 
+	\left(\begin{matrix}
+		u_{k}\\v_{k}
+	\end{matrix}\right) + 0.1 \cdot \left(\begin{matrix}
+		\mathrm{drand48}() \cdot (u_0 - u_k)\\
+		\mathrm{drand48}() \cdot (v_0 - v_k)\\
+	\end{matrix}\right)
+\] where $\mathrm{drand48()}$ returns a random floating number between $0$ and $1$.
+
+% Starting from an initial guess of $u$ and $v$, it iteratively find better approximations of the intersection point, and can converge towards the correct root or find that the root does not exist.
+
+
+\subsection{Evaluation}
+
+TODO: 
 
 \section{Results}
 
+% TODO: bug没修完还没画出来。
+
+% \begin{figure}[H]
+% 	\centering
+% 	\includegraphics[width=0.5\textwidth]{results/result600.png}
+% 	\caption{A NURBS ball}
+% 	\label{fig:result1}
+% \end{figure}
 
 
 
