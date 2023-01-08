@@ -521,7 +521,7 @@ PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSur
       // Compute the intersection point
       // Update the interaction variables
       interaction.pos = S.position;
-      interaction.dist = (S.position - ray.origin).norm();
+      interaction.dist = (S.position - ray.origin).dot(ray.direction);
       // interaction.normal = (patch.evaluate(u+eps, v).position - patch.evaluate(u-eps, v).position).cross(patch.evaluate(u, v+eps).position - patch.evaluate(u, v-eps).position).normalized();
       interaction.normal = S.normal;
       interaction.material = bsdf;
