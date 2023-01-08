@@ -353,14 +353,16 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
     int new_knots_length_m = 0;
     for(int i = 0; i < knots_m_.size(); ++ i) new_knots_m_[i] = knots_m_[i];
     new_knots_length_m = knots_m_.size();
-    for(int i = 0; i < knots_m_.size() - 1; ++ i) 
+    for(int ii = 0; ii < knots_m_.size() - 1; ++ ii) 
     {
-        if(knots_m_[i] == knots_m_[i + 1]) continue;
-        int vd = knots_m_addnum[i] + 1;
-        float delta = (knots_m_[i + 1] - knots_m_[i]) / vd;
-        for(int j = 1; j <= knots_m_addnum[i]; ++ j)
+        if(knots_m_[ii] == knots_m_[ii + 1]) continue;
+        int vd = knots_m_addnum[ii] + 1;
+        float delta = (knots_m_[ii + 1] - knots_m_[ii]) / vd;
+        for(int j = 1; j <= knots_m_addnum[ii]; ++ j)
         {
-            float t = knots_m_[i] + j * delta;
+            float t = knots_m_[ii] + j * delta;
+            int i = 0;
+            for(;i + 1 < new_knots_length_m && (!(new_knots_m_[i] <= t && new_knots_m_[i + 1] > t)); ++ i);
             for(int k = 0; k < control_points_n_.size(); ++ k)
             {
                 std::vector<Vec3f> tmp_controlpoints;
@@ -401,15 +403,16 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
             new_knots_length_m ++;
         }
     }
-
+    // for(auto x : new_knots_m_) printf("%f ", x);
+    // printf("\n");
     //close n direction
     int length_m = new_knots_length_m;
     auto x_knots_m = new_knots_m_;
-    for(int i = degree_m_ + 1; i < length_m - 1 - degree_m_; ++ i)
+    for(int ii = degree_m_ + 1; ii < length_m - 1 - degree_m_; ++ ii)
     {
         for(int j = 0; j < degree_m_ - 1; ++ j)
         {
-            float t = x_knots_m[i];
+            float t = x_knots_m[ii];
             // printf("%f\n", t);
             for(int k = 0; k < control_points_n_.size(); ++ k)
             {
@@ -418,7 +421,9 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
                 tmp_controlpoints.resize(sizet);
                 std::vector<float> tmp_weight;
                 tmp_weight.resize(sizet);
-
+                int i = 0;
+                for(;i + 1 < new_knots_length_m && (!(new_knots_m_[i] <= t && new_knots_m_[i + 1] > t)); ++ i);
+                // printf("%d\n",i);
                 for(int l = 0; l <= i - degree_m_; ++ l)
                 {
                     tmp_controlpoints[l] = new_control_points_n[k][l];
@@ -476,14 +481,16 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
     int new_knots_length_n = 0;
     for(int i = 0; i < knots_n_.size(); ++ i) new_knots_n_[i] = knots_n_[i];
     new_knots_length_n = knots_n_.size();
-    for(int i = 0; i < knots_n_.size() - 1; ++ i) 
+    for(int ii = 0; ii < knots_n_.size() - 1; ++ ii) 
     {
-        if(knots_n_[i] == knots_n_[i + 1]) continue;
-        int ud = knots_n_addnum[i] + 1;
-        float delta = (knots_n_[i + 1] - knots_n_[i]) / ud;
-        for(int j = 0; j < knots_n_addnum[i]; ++ j)
+        if(knots_n_[ii] == knots_n_[ii + 1]) continue;
+        int ud = knots_n_addnum[ii] + 1;
+        float delta = (knots_n_[ii + 1] - knots_n_[ii]) / ud;
+        for(int j = 0; j < knots_n_addnum[ii]; ++ j)
         {
-            float t = knots_n_[i] + j * delta;
+            float t = knots_n_[ii] + j * delta;
+            int i = 0;
+            for(;i + 1 < new_knots_length_n && (!(new_knots_n_[i] <= t && new_knots_n_[i + 1] > t)); ++ i);
             for(int k = 0; k < m; ++ k)
             {
                 std::vector<Vec3f> tmp_controlpoints;
@@ -527,11 +534,11 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
     //close the m direction
     int length_n = new_knots_length_n;
     auto x_knots_n = new_knots_n_;
-    for(int i = degree_n_ + 1; i < length_n - 1 - degree_n_; ++ i)
+    for(int ii = degree_n_ + 1; ii < length_n - 1 - degree_n_; ++ ii)
     {
         for(int j = 0; j < degree_n_ - 1; ++ j)
         {
-            float t = x_knots_n[i];
+            float t = x_knots_n[ii];
             for(int k = 0; k < m; ++ k)
             {
                 std::vector<Vec3f> tmp_controlpoints;
@@ -539,7 +546,8 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
                 tmp_controlpoints.resize(sizet);
                 std::vector<float> tmp_weight;
                 tmp_weight.resize(sizet);
-
+                int i = 0;
+                for(;i + 1 < new_knots_length_n && (!(new_knots_n_[i] <= t && new_knots_n_[i + 1] > t)); ++ i);
                 for(int l = 0; l <= i - degree_n_; ++ l)
                 {
                     tmp_controlpoints[l] = new_control_points_m[k][l];
@@ -548,6 +556,7 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
                 for(int l = i - degree_n_ + 1; l <= i; ++ l)
                 {
                     auto alpha = (t - new_knots_n_[l]) / (new_knots_n_[l + degree_m_] - new_knots_n_[l]);
+                    // printf("%f %f %f %f\n",new_knots_n_[l],new_knots_n_[l + degree_m_],  t, alpha);
                     tmp_controlpoints[l] = (1.0f - alpha) * new_control_points_m[k][l - 1] + alpha * new_control_points_m[k][l];
                     tmp_weight[l] = (1.0f - alpha) * new_w_m[k][l - 1] + alpha * new_w_m[k][l];
                 }
@@ -572,6 +581,14 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
             new_knots_length_n ++;
         }
     }
+    // for(int i = 0; i < new_control_points_m.size(); ++ i)
+    // {
+    //     for(int j = 0; j < new_control_points_m[i].size(); ++ j)
+    //     {
+    //         auto x = new_control_points_m[i][j];
+    //         printf("%d %d (%f %f %f)\n", i, j, x.x(), x.y(), x.z());
+    //     }
+    // }
     //generate the mesh
     std::vector<BezierSurface> patches;
     for(int i = 0; i < new_knots_length_m - 1; ++ i)
@@ -586,7 +603,7 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
             {
                 for(int l = j - degree_n_; l <= j; ++ l)
                 {
-                    patch.setControlPointAndWeight(a, b, new_control_points_m[k][l], new_w_m[k][l]);
+                    patch.setControlPointAndWeight(a, b, new_control_points_m[k][l] * scale + translation, new_w_m[k][l]);
                     ++ b;
                 }
                 ++ a;

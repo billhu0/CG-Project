@@ -254,7 +254,7 @@ void TriangleMesh::lbvhHit(Interaction &interaction, Ray &ray) const
       {
         for(int j = 0; j < now.num; ++ j)
         {
-          int i = triangle_indices[now.triangle_offset + j];
+          int i = triangle_indices[now.object_offset + j];
           Vec3i v_idx(v_indices[3 * i], v_indices[3 * i + 1], v_indices[3 * i + 2]);
           Vec3i n_idx(n_indices[3 * i], n_indices[3 * i + 1], n_indices[3 * i + 2]);
           Interaction temp;
@@ -298,6 +298,7 @@ PatchMesh::genAABB_for_BVH(BVHNode* now)
   {
     now->aabb = AABB(getPatch(now->begin + i), now->aabb);
   }
+
   return;
 }
 
@@ -434,6 +435,8 @@ PatchMesh::buildBVH()
   {
     patch_AABB.push_back(AABB(patches[i]));
     patch_indices.push_back(i);
+    // auto x = patch_AABB[i];
+    // printf("%d low : %f %f %f upper: %f %f %f\n", i, x.low_bnd.x(), x.low_bnd.y(), x.low_bnd.z(), x.upper_bnd.x(), x.upper_bnd.y(), x.upper_bnd.z());
   }
   bvh = new BVHNode();
   bvh->num = patch_AABB.size();
@@ -463,7 +466,7 @@ PatchMesh::lbvhHit(Interaction &interaction, Ray &ray) const
       {
         for(int j = 0; j < now.num; ++ j)
         {
-          int i = patch_indices[now.triangle_offset + j];
+          int i = patch_indices[now.object_offset + j];
           Interaction temp;
         
           if (intersectOnePatch(ray, temp, patches[i]) && (temp.dist < interaction.dist)) {
@@ -525,6 +528,7 @@ PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSur
       interaction.wi = ray.direction;
       interaction.wo = -ray.direction;
       interaction.type = Interaction::Type::GEOMETRY;
+      // printf("Patch mesh : %f\n", interaction.dist);
       return true;
     }
     if (std::abs(error) > error_prev) {
@@ -535,8 +539,8 @@ PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSur
     // J = compute Jacobian matrix
     // FIXME: 这里是 S_u(u, v), 应该不能直接patch.evaluate?
     auto ress = patch.evaluate(u, v).second;
-    Vec2f Fu = {N1.dot(ress.first), N2.dot(ress.first) + d2};
-    Vec2f Fv = {N1.dot(ress.second) + d1, N2.dot(ress.second)};
+    Vec2f Fu = {N1.dot(ress.first), N2.dot(ress.first)};
+    Vec2f Fv = {N1.dot(ress.second), N2.dot(ress.second)};
     Mat2f J;
     J.col(0) = Fu;
     J.col(1) = Fv;

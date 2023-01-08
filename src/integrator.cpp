@@ -53,9 +53,8 @@ Vec3f Integrator::radiance(Ray &ray, Sampler &sampler) const {
       break;
     }
     if(!foundIntersection || bounces >= max_depth) break;
-
+    // printf("radiance : %f\n", isect.dist);
     L += beta.cwiseProduct(directLighting(isect, sampler, isDelta));
-
     
     Vec3f wo = isect.wo, wi;
     float pdf = isect.material->sample(isect, sampler);
@@ -118,5 +117,6 @@ Vec3f Integrator::directLighting(Interaction &interaction, Sampler &sampler, boo
       L = MIS(L, light_pdf, L_idealspecular, brdf_pdf);
     }
   }
+  // printf("                            L:%f %f %f\n", L.x(), L.y(), L.z());
   return L;
 }

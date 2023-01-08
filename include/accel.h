@@ -52,7 +52,7 @@ struct LBVH{
   int num; //positiv : leaf_size, -1 : not leaf node
   union {
     int node_offset;
-    int triangle_offset;
+    int object_offset;
   } ;
 
 
@@ -68,7 +68,7 @@ struct LBVH{
     {
       num = node->num;
       aabb = node->aabb;
-      triangle_offset = node->begin;
+      object_offset = node->begin;
     }
     return;
   }
