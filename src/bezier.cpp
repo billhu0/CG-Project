@@ -101,11 +101,11 @@ Vertex BezierSurface::evaluate(const std::vector<std::vector<Vec4f>>& control_po
   return point;
 }
 
-Vertex BezierSurface::evaluate(float u, float v) const{
+std::pair<Vertex, std::pair<Vec3f, Vec3f>> BezierSurface::evaluate(float u, float v) const{
   Vertex point_n, point_m, point;
   point_m = evaluate(control_points_m_, u, v);
   point_n = evaluate(control_points_n_, v, u);
   point.position = (point_m.position + point_n.position) * static_cast<float>(0.5);
-  point.normal = point_m.normal.cross(point_m.normal);
-  return point;
+  point.normal = point_m.normal.cross(point_n.normal);
+  return std::pair(point, std::pair(point_m.normal, point_n.normal));
 }

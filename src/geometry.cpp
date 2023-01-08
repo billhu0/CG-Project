@@ -380,7 +380,7 @@ void PatchMesh::buildBVH_partition(BVHNode* now, int pre_axis)
   genAABB_for_BVH(now);
   // printf("%d %d\n", now->begin, now->num);
   // printf("%f %f %f\n", now->aabb.getDist(0), now->aabb.getDist(1), now->aabb.getDist(2));
-  if(now->num <= 25) return;
+  if(now->num == 1) return;
   float dis = now->aabb.getDist(0);
   now->partition_axis = 0;
   for(int i = 1; i < 3; ++ i)
@@ -505,11 +505,12 @@ PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSur
   // TODO: write Newton Root-Finder here?
   float error_prev = std::numeric_limits<float>::max();
   // u, v are the initial guess of the intersection point
-  const float u_initial = patch.range_u_.x(), v_initial = patch.range_v_.x();
+  const float u_initial = (patch.range_u_.x() + patch.range_u_.y()) / 2.0f, v_initial = (patch.range_v_.x() + patch.range_v_.y())/2.0f;
   float u = u_initial, v = v_initial;
   for (int iter = 0; iter < MAX_ITER; ++iter) {
     // S = evaluate surface (u, v)
-    Vertex S = patch.evaluate(u, v);    
+    auto res = patch.evaluate(u, v);
+    Vertex S = res.first;
     Vec2f R = Vec2f(N1.dot(S.position) + d1, N2.dot(S.position) + d2);
     float error = std::abs(R.x()) + std::abs(R.y());
     if (error < eps) {
@@ -518,8 +519,9 @@ PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSur
       // Update the interaction variables
       interaction.pos = S.position;
       interaction.dist = (S.position - ray.origin).norm();
-      interaction.normal = (patch.evaluate(u+eps, v).position - patch.evaluate(u-eps, v).position).cross(patch.evaluate(u, v+eps).position - patch.evaluate(u, v-eps).position).normalized();
-      // interaction.material = ? ;
+      // interaction.normal = (patch.evaluate(u+eps, v).position - patch.evaluate(u-eps, v).position).cross(patch.evaluate(u, v+eps).position - patch.evaluate(u, v-eps).position).normalized();
+      interaction.normal = S.normal;
+      interaction.material = bsdf;
       interaction.wi = ray.direction;
       interaction.wo = -ray.direction;
       interaction.type = Interaction::Type::GEOMETRY;
@@ -532,8 +534,9 @@ PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSur
 
     // J = compute Jacobian matrix
     // FIXME: 这里是 S_u(u, v), 应该不能直接patch.evaluate?
-    Vec2f Fu = {N1.dot(patch.evaluate(u+eps, v).position), N2.dot(patch.evaluate(u+eps, v).position) + d2};
-    Vec2f Fv = {N1.dot(patch.evaluate(u, v+eps).position) + d1, N2.dot(patch.evaluate(u, v+eps).position)};
+    auto ress = patch.evaluate(u, v).second;
+    Vec2f Fu = {N1.dot(ress.first), N2.dot(ress.first) + d2};
+    Vec2f Fv = {N1.dot(ress.second) + d1, N2.dot(ress.second)};
     Mat2f J;
     J.col(0) = Fu;
     J.col(1) = Fv;
