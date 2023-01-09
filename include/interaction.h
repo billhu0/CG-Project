@@ -4,7 +4,7 @@
 #include "core.h"
 
 struct Interaction {
-  enum Type { LIGHT, GEOMETRY, NONE };
+  enum Type { LIGHT, GEOMETRY, NONE, NURBS };
   Vec3f pos{0, 0, 0};
   float dist{RAY_DEFAULT_MAX};
   Vec3f normal{0, 0, 0};

@@ -22,7 +22,7 @@ void Scene::setLight(const std::shared_ptr<Light> &new_light) {
 }
 bool Scene::isShadowed(Ray &shadow_ray) {
   Interaction in;
-  return intersect(shadow_ray, in) && in.type == Interaction::Type::GEOMETRY;
+  return intersect(shadow_ray, in) && (in.type == Interaction::Type::GEOMETRY || in.type == Interaction::Type::NURBS);
 }
 
 bool Scene::intersect(Ray &ray, Interaction &interaction) {

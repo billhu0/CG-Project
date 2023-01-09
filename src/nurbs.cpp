@@ -265,6 +265,43 @@ std::shared_ptr<PatchMesh>
 NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
 {
 
+    std::vector<NURBSPatch> patches;
+    for(int i = 0; i < knots_m_.size() - 1; ++ i)
+    {
+        if(knots_m_[i] == knots_m_[i + 1]) continue;
+        for(int j = 0; j < knots_n_.size() - 1; ++ j)
+        {
+            if(knots_n_[j] == knots_n_[j + 1]) continue;
+            NURBSPatch patch(degree_m_ + 1, degree_n_ + 1, i, j, Vec2f(knots_m_[i], knots_m_[i + 1]), Vec2f(knots_n_[j], knots_n_[j + 1]));
+            int a = 0, b = 0;
+            for(int k = i - degree_m_; k <= i; ++ k)
+            {
+                for(int l = j - degree_n_; l <= j; ++ l)
+                {
+                    // printf("pre : %f %f %f\n", control_points_m_[k][l].x(), control_points_m_[k][l].y(), control_points_m_[k][l].z());
+                    patch.setControlPointAndWeight(a, b, control_points_m_[k][l] * scale + translation, w_m_[k][l]);
+                    // printf("now: %f %f %f %f\n", patch.control_points_[a][b].x(), patch.control_points_[a][b].y(), patch.control_points_[a][b].z(), patch.control_points_[a][b].w());
+                    ++ b;
+                }
+                ++ a;
+                b = 0;
+            }
+            patch.setParameter(knots_m_, knots_n_);
+            patch.setKnots(knots_m_, knots_n_);
+            patches.push_back(patch);
+            // for(int i = 0; i <= patch.knots_u_.size(); ++ i) printf("%f ", patch.knots_u_[i]);
+            // printf("\n");
+            // for(int i = 0; i <= patch.knots_v_.size(); ++ i) printf("%f ", patch.knots_v_[i]);
+            // printf("\n");
+            // for(auto vec : patch.control_points_)
+            // {
+            //     for(auto p : vec) printf("%f %f %f %f\n", p.x(), p.y(), p.z(), p.w());
+            // }
+            // printf("\n");
+        }
+    }
+    return std::make_shared<PatchMesh>(patches);
+
     float C = 1.0f;
     //generate V and A
     std::vector<std::vector<Vec3f>> V_m, V_n, A_m, A_n;
@@ -590,14 +627,14 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
     //     }
     // }
     //generate the mesh
-    std::vector<BezierSurface> patches;
+    // std::vector<NURBSPatch> patches;
     for(int i = 0; i < new_knots_length_m - 1; ++ i)
     {
         if(new_knots_m_[i] == new_knots_m_[i + 1]) continue;
         for(int j = 0; j < new_knots_length_n - 1; ++ j)
         {
             if(new_knots_n_[j] == new_knots_n_[j + 1]) continue;
-            BezierSurface patch(degree_m_ + 1, degree_n_ + 1, Vec2f(new_knots_m_[i], new_knots_m_[i + 1]), Vec2f(new_knots_n_[j], new_knots_n_[j + 1]));
+            NURBSPatch patch(degree_m_ + 1, degree_n_ + 1, i, j, Vec2f(new_knots_m_[i], new_knots_m_[i + 1]), Vec2f(new_knots_n_[j], new_knots_n_[j + 1]));
             int a = 0, b = 0;
             for(int k = i - degree_m_; k <= i; ++ k)
             {
@@ -609,177 +646,10 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
                 ++ a;
                 b = 0;
             }
+            patch.setParameter(new_knots_m_, new_knots_n_);
+            patch.setKnots(new_knots_m_, new_knots_n_);
             patches.push_back(patch);
         }
     }
     return std::make_shared<PatchMesh>(patches);
 }
-
-// Object 
-// NURBSSurface::genObject_adaptivesample(float tolerance)
-// {
-//     Object res;
-//     std::vector<std::pair<float, float>> parameter;
-//     int triangle_num = 0;
-//     unsigned int divide_num = 50;
-//     unsigned int vertex_num = 0;
-//     unsigned int line_size = divide_num;
-//     for(int i = 0; i <= divide_num; ++ i)
-//     {
-//         float u = (float) i / (float) divide_num;
-        
-//         for(int j = 0; j <= divide_num; ++ j)
-//         {
-//             float v = (float) j / (float) divide_num;
-//             res.vertices.push_back(evaluate(u, v));
-//             parameter.push_back(std::make_pair(u, v));
-//             vertex_num ++;
-//         }
-//     }
-//     std::vector<Triangle> T;
-//     for(unsigned int i = 0; i < line_size; ++ i)
-//         for(unsigned int j = 0; j < line_size; ++ j)
-//         {
-//             T.push_back(Triangle(i * (line_size + 1) + j, i * (line_size + 1) + j + 1, (i + 1) * (line_size + 1) + j));
-//             T.push_back(Triangle(i * (line_size + 1) + j + 1, (i + 1) * (line_size + 1) + j, (i + 1) * (line_size + 1) + j + 1));
-//         }
-//     std::vector<Triangle> NT;
-//     for(;T.size() != NT.size();) //there is no subdivide in the last loop
-//     {
-//         if(!NT.empty())
-//         {
-//             T.clear();
-//             T = NT;
-//             NT.clear();
-//         }
-//         for(auto t : T)
-//         {
-//             Vertex p1 = res.vertices[t.p1], p2 = res.vertices[t.p2], p3 = res.vertices[t.p3];
-//             std::pair parameter1 = parameter[t.p1], parameter2 = parameter[t.p2], parameter3 = parameter[t.p3];
-//             if((!t.flag12) && (!check_flat(p1.normal, p2.normal, tolerance)))
-//             {
-//                 t.flag12 = true;
-//                 t.div_edge_num ++;
-//                 float u = (parameter1.first + parameter2.first) * 0.5f;
-//                 float v = (parameter1.second + parameter2.second) * 0.5f;
-//                 res.vertices.push_back(evaluate(u, v));
-//                 parameter.push_back(std::make_pair(u, v));
-//                 t.p12 = vertex_num;
-//                 for(auto tt : T)
-//                 {
-//                     if(samen(tt, t)) continue;
-//                     if((tt.p1 == t.p1 && tt.p2 == t.p2)||(tt.p1 == t.p2 && tt.p2 == t.p1)) {tt.flag12 = true; tt.div_edge_num++; tt.p12 = vertex_num; break;}
-//                     if((tt.p2 == t.p1 && tt.p3 == t.p2)||(tt.p2 == t.p2 && tt.p3 == t.p1)) {tt.flag23 = true; tt.div_edge_num++; tt.p23 = vertex_num; break;}
-//                     if((tt.p3 == t.p1 && tt.p1 == t.p2)||(tt.p3 == t.p2 && tt.p1 == t.p1)) {tt.flag31 = true; tt.div_edge_num++; tt.p31 = vertex_num; break;}
-//                 }
-//                 vertex_num ++;
-//             }
-//             if((!t.flag23) && (!check_flat(p2.normal, p3.normal, tolerance)))
-//             {
-//                 t.flag23 = true;
-//                 t.div_edge_num ++;
-//                 float u = (parameter2.first + parameter3.first) * 0.5f;
-//                 float v = (parameter2.second + parameter3.second) * 0.5f;
-//                 res.vertices.push_back(evaluate(u, v));
-//                 parameter.push_back(std::make_pair(u, v));
-//                 t.p23 = vertex_num;
-//                 for(auto tt : T)
-//                 {
-//                     if(samen(tt, t)) continue;
-//                     if((tt.p1 == t.p2 && tt.p2 == t.p3)||(tt.p1 == t.p3 && tt.p2 == t.p2)) {tt.flag12 = true; tt.div_edge_num++; tt.p12 = vertex_num; break;}
-//                     if((tt.p2 == t.p2 && tt.p3 == t.p3)||(tt.p2 == t.p3 && tt.p3 == t.p2)) {tt.flag23 = true; tt.div_edge_num++; tt.p23 = vertex_num; break;}
-//                     if((tt.p3 == t.p2 && tt.p1 == t.p3)||(tt.p3 == t.p3 && tt.p1 == t.p2)) {tt.flag31 = true; tt.div_edge_num++; tt.p31 = vertex_num; break;}
-//                 }
-//                 vertex_num ++;
-//             }
-//             if((!t.flag31) && (!check_flat(p3.normal, p1.normal, tolerance)))
-//             {
-//                 t.flag31 = true;
-//                 t.div_edge_num ++;
-//                 float u = (parameter3.first + parameter1.first) * 0.5f;
-//                 float v = (parameter3.second + parameter1.second) * 0.5f;
-//                 res.vertices.push_back(evaluate(u, v));
-//                 parameter.push_back(std::make_pair(u, v));
-//                 t.p31 = vertex_num;
-//                 for(auto tt : T)
-//                 {
-//                     if(samen(tt, t)) continue;
-//                     if((tt.p1 == t.p3 && tt.p2 == t.p1)||(tt.p1 == t.p1 && tt.p2 == t.p3)) {tt.flag12 = true; tt.div_edge_num++; tt.p12 = vertex_num; break;}
-//                     if((tt.p2 == t.p3 && tt.p3 == t.p1)||(tt.p2 == t.p1 && tt.p3 == t.p3)) {tt.flag23 = true; tt.div_edge_num++; tt.p23 = vertex_num; break;}
-//                     if((tt.p3 == t.p3 && tt.p1 == t.p1)||(tt.p3 == t.p1 && tt.p1 == t.p3)) {tt.flag31 = true; tt.div_edge_num++; tt.p31 = vertex_num; break;}
-//                 }
-//                 vertex_num ++;
-//             }
-
-//             if(t.div_edge_num == 0)
-//             {
-//                 NT.push_back(t);
-//             }
-//             else if(t.div_edge_num == 1)
-//             {
-//                 if(t.flag12)
-//                 {
-//                     NT.push_back(Triangle(t.p1, t.p3, t.p12));
-//                     NT.push_back(Triangle(t.p12, t.p2, t.p3));
-//                 }
-//                 else if(t.flag23)
-//                 {
-//                     NT.push_back(Triangle(t.p1, t.p3, t.p23));
-//                     NT.push_back(Triangle(t.p1, t.p2, t.p23)); 
-//                 }
-//                 else
-//                 {
-//                     NT.push_back(Triangle(t.p2, t.p3, t.p31));
-//                     NT.push_back(Triangle(t.p1, t.p2, t.p31));   
-//                 }
-//             }
-//             else if(t.div_edge_num == 2)
-//             {
-//                 if(!t.flag12)
-//                 {
-//                     NT.push_back(Triangle(t.p3, t.p31, t.p23));
-//                     NT.push_back(Triangle(t.p1, t.p31, t.p23));
-//                     NT.push_back(Triangle(t.p1, t.p2, t.p23));
-//                 }
-//                 else if(!t.flag23)
-//                 {
-//                     NT.push_back(Triangle(t.p2, t.p31, t.p12));
-//                     NT.push_back(Triangle(t.p1, t.p31, t.p12));
-//                     NT.push_back(Triangle(t.p3, t.p2, t.p31)); 
-//                 }
-//                 else
-//                 {
-//                     NT.push_back(Triangle(t.p2, t.p23, t.p12));
-//                     NT.push_back(Triangle(t.p3, t.p23, t.p12));
-//                     NT.push_back(Triangle(t.p3, t.p1, t.p12));  
-//                 }
-//             }
-//             else
-//             {
-//                 NT.push_back(Triangle(t.p3, t.p31, t.p23));
-//                 NT.push_back(Triangle(t.p1, t.p31, t.p12));
-//                 NT.push_back(Triangle(t.p31, t.p23, t.p12));
-//                 NT.push_back(Triangle(t.p2, t.p23, t.p12));
-//             }
-//         }
-//     }   
-
-//     for(auto t : NT)
-//     {
-//         res.indices.push_back(t.p1);
-//         res.indices.push_back(t.p2);
-//         res.indices.push_back(t.p3);
-//     }
-//     res.draw_mode.drawmethod = DRAW_ELEMENTS_WITH_SHADER;
-//     res.draw_mode.primitive_mode = GL_TRIANGLES;
-
-
-//     res.init();
-//     return res;
-// }
-
-// bool
-// NURBSSurface::check_flat(Vec3f normal1, Vec3f normal2, float tolerance)
-// {
-//     return (1 - glm::dot(normal1, normal2)) < tolerance;
-// }

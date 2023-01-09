@@ -5,18 +5,18 @@ AABB::AABB(const Vec3f &v1, const Vec3f &v2, const Vec3f &v3) {
   upper_bnd = v1.cwiseMax(v2.cwiseMax(v3));
 }
 
-AABB::AABB(const BezierSurface &patch)
+AABB::AABB(const NURBSPatch &patch)
 {
-  int m = patch.control_points_m_.size();
-  int n = patch.control_points_n_.size();
-  Vec4f p4 = patch.control_points_m_[0][0];
+  int m = patch.degree_u_;
+  int n = patch.degree_v_;
+  Vec4f p4 = patch.control_points_[0][0];
   Vec3f p3 = Vec3f(p4.x() / p4.w(), p4.y() / p4.w(), p4.z() / p4.w());
   low_bnd = p3;
   upper_bnd = p3;
   for(int i = 0; i < m; ++ i)
     for(int j = 0; j < n; ++ j)
     {
-      p4 = patch.control_points_m_[i][j];
+      p4 = patch.control_points_[i][j];
       p3 = Vec3f(p4.x() / p4.w(), p4.y() / p4.w(), p4.z() / p4.w());
       low_bnd = low_bnd.cwiseMin(p3);
       upper_bnd = upper_bnd.cwiseMax(p3);

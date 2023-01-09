@@ -32,7 +32,7 @@ class NURBSSurface{
         std::vector<float> knots_m_, knots_n_;
         int degree_m_, degree_n_;
 
-        bool check_flat(Vec3f normal1, Vec3f normal2, float tolerance);
+        // bool check_flat(Vec3f normal1, Vec3f normal2, float tolerance);
         
     public:
         NURBSSurface(int m, int n, int degreem, int degreen);

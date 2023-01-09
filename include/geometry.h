@@ -63,13 +63,13 @@ class TriangleMesh : public Mesh {
 class PatchMesh : public Mesh{
   public:
     PatchMesh() = default;
-    PatchMesh(std::vector<BezierSurface> &bezier_patches);
+    PatchMesh(std::vector<NURBSPatch> &nurbs_patches);
     ~PatchMesh(){}
     bool intersect(Ray &ray, Interaction &interaction) const override;
     void buildBVH() override;
   protected:
     void lbvhHit(Interaction &Interaction, Ray &ray) const;
-    bool intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSurface &patch) const;
+    bool intersectOnePatch(Ray &ray, Interaction &interaction, const NURBSPatch &patch) const;
     const AABB getPatch(int pos);
     void genAABB_for_BVH(BVHNode* now);
     float calCost(AABB a, int numa, AABB b, int numb, AABB N);
@@ -78,7 +78,7 @@ class PatchMesh : public Mesh{
     void buildBVH_partition(BVHNode* now, int pre_axis);
     int DFS_BVHTree(BVHNode* now);
 
-    std::vector<BezierSurface> patches;
+    std::vector<NURBSPatch> patches;
     std::vector<AABB> patch_AABB;
     std::vector<int> patch_indices; // the index of the ith patch in patch_AABB
     std::vector<LBVH> lbvh;

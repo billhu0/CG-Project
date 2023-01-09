@@ -16,7 +16,7 @@ struct AABB {
   /// construct an AABB from three vertices of a triangle.
   AABB(const Vec3f &v1, const Vec3f &v2, const Vec3f &v3);
   /// construct an AABB from the bezier surface
-  AABB(const BezierSurface &patch); 
+  AABB(const NURBSPatch &patch); 
   /// Construct AABB by merging two AABBs
   AABB(const AABB &a, const AABB &b);
   bool intersect(const Ray &ray, float *t_in, float *t_out);

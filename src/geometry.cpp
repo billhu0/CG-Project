@@ -273,9 +273,9 @@ void TriangleMesh::lbvhHit(Interaction &interaction, Ray &ray) const
   return;
 }
 
-PatchMesh::PatchMesh(std::vector<BezierSurface> &bezier_patches)
+PatchMesh::PatchMesh(std::vector<NURBSPatch> &nurbs_patches)
 {
-  patches = bezier_patches;
+  patches = nurbs_patches;
 }
 
 bool
@@ -485,7 +485,7 @@ PatchMesh::lbvhHit(Interaction &interaction, Ray &ray) const
 }
 
 bool
-PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSurface &patch) const
+PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const NURBSPatch &patch) const
 {
   // Write the ray (o+td) as an intersection of two planes.
   // 把 ray (o+td形式) 写成两个平面的交点形式
@@ -512,35 +512,44 @@ PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSur
   float u = u_initial, v = v_initial;
   for (int iter = 0; iter < MAX_ITER; ++iter) {
     // S = evaluate surface (u, v)
+    if(u < patch.range_u_.x() || u >= patch.range_u_.y()) return false;
+    if(v < patch.range_v_.x() || v >= patch.range_v_.y()) return false;
     auto res = patch.evaluate(u, v);
     Vertex S = res.first;
+    // printf("%f %f %f %f %f\n", S.position.x(), S.position.y(), S.position.z(), u, v);
     Vec2f R = Vec2f(N1.dot(S.position) + d1, N2.dot(S.position) + d2);
     float error = std::abs(R.x()) + std::abs(R.y());
+    // printf("%f\n", error);
     if (error < eps) {
-
+      // printf("in\n");
       // Compute the intersection point
       // Update the interaction variables
       interaction.pos = S.position;
       interaction.dist = (S.position - ray.origin).dot(ray.direction);
       // interaction.normal = (patch.evaluate(u+eps, v).position - patch.evaluate(u-eps, v).position).cross(patch.evaluate(u, v+eps).position - patch.evaluate(u, v-eps).position).normalized();
       interaction.normal = S.normal;
+      // printf("pos: %f %f %f\n", S.position.x(), S.position.y(), S.position.z());
+      // auto ref = Vec3f(S.position.x() + 0.3f, S.position.y() - 1.0f, S.position.z() - 0.4f).normalized();
+      // printf("pos - o: %f %f %f\n", ref.x(), ref.y(), ref.z());
+      // printf("normal: %f %f %f\n", S.normal.x(), S.normal.y(), S.normal.z());
       interaction.material = bsdf;
       interaction.wi = ray.direction;
       interaction.wo = -ray.direction;
-      interaction.type = Interaction::Type::GEOMETRY;
+      interaction.type = Interaction::Type::NURBS;
       // printf("Patch mesh : %f\n", interaction.dist);
       return true;
     }
+    // printf("%f\n", error);
     if (std::abs(error) > error_prev) {
+      // printf("\n");
       return false;
     }
     error_prev = std::abs(error);
-
     // J = compute Jacobian matrix
     // FIXME: 这里是 S_u(u, v), 应该不能直接patch.evaluate?
     auto ress = patch.evaluate(u, v).second;
-    Vec2f Fu = {N1.dot(ress.first), N2.dot(ress.first)};
-    Vec2f Fv = {N1.dot(ress.second), N2.dot(ress.second)};
+    Vec2f Fu = {N1.dot(ress.first), N2.dot(ress.first) + d2};
+    Vec2f Fv = {N1.dot(ress.second) + d1, N2.dot(ress.second)};
     Mat2f J;
     J.col(0) = Fu;
     J.col(1) = Fv;
@@ -554,6 +563,7 @@ PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const BezierSur
       v -= J.inverse().col(1).dot(R);
     }
   }
+  // printf("\n");
   return false;
 }
 
