@@ -40,58 +40,94 @@ Member 2:\quad Luojia Hu
 
 In this project, we implemented an algorithm for directly ray tracing NURBS surfaces without generating mesh first and ray tracing the mesh. % By ray tracing NURBS directly, we can avoid the dilemma that we have to generate a fine enough mesh while maintaining a reasonable memory usage and computation time. 
 
+
 \section{Implementation Details}
 
-In this section, we will discuss the NURBS surface representation and the `direct' ray tracing NURBS algorithm we implemented.
+In this section, we will discuss the NURBS surface representation and the `direct' ray tracing NURBS algorithm we implemented. In short, we first flatten the control points to get a refined control mesh, and then generate a BVH from it. During ray tracing step, we use the Newton-Rhapson method to find intersection with surface patches. Finally we integrated it into the global illumination ray tracing framework to get the result. 
 
 \subsection{NURBS Surface Representation}
 
 % 这里介绍一下NURBS
 
-A \textbf{Non-Uniform Rational B-spline Surface}, or \textbf{NURBS}, is a generalization of B-spline surfaces. It is defined by a set of control points, a set of weights, and a set of knot vectors. The control points are the vertices of the surface, and the weights are the weights of the vertices. The knot vectors are the knot vectors of the surface. The surface is defined by the following equation: 
+A \textbf{Non-Uniform Rational B-spline Surface}, or \textbf{NURBS}, is a generalization of B-spline surfaces. A NURBS curve is defined by a set of \textbf{control points}, along with a weight for each control point called \textbf{knot vector} and a \textbf{knot vector} used for fine-tuning the shape. 
+
+The \textbf{control points} are the vertices of the surface, and the weights are the weights of the vertices. 
+
+The knots or \textbf{knot vector} is a list of $(\mathrm{degree}+N-1)$ numbers where $N$ is the number of control points. It should be an non-decreasing sequence, and the number of duplicate values cannot be larger than the degree. For example, for a degree 3 NURBS curve with 11 control points, $0,0,0,1,2,2,2,3,7,7,9,9,9$ is an acceptable knot vector. The number of times a knot value is duplicated is called the knot's \textbf{multiplicity}. 
+
+The surface is defined by the following equation: 
 
 \begin{equation}
 	\label{eq:1} % TODO: 公式没改完
 	\mathbf{S}^w(u,v) = \sum_{i=0}^{M-1} \sum_{j=0}^{N-1} \mathbf{P}_{i,j}^w w_{i,j} B_{i,p}(u) B_{j,q}(v) P_{i,j}
 \end{equation}
 
-where $B_{i,p}(u)$ is the $i$th B-spline basis function of degree $p$ at $u$, $P_{i,j}$ is the $i$th control point of the $j$th row, and $w_{i,j}$ is the weight of the $i$th control point of the $j$th row. The degree of the surface is $p$ in the $u$ direction and $q$ in the $v$ direction. The surface is defined on the domain $[u_{0}, u_{n+p+1}] \times [v_{0}, v_{m+q+1}]$, where $u_{0} = v_{0} = 0$ and $u_{n+p+1} = v_{m+q+1} = 1$. The knot vectors are defined as follows:
+where $\mathbf{P}$ are the control points of the $M\times N$ control mesh, which has basis functions $B_{j,k_u}, B_{i, k_v}$ of orders $k_u$ and $k_v$ defined over knot vectors.
 
-\begin{equation}
-\label{eq:2}
-u_{i} = \begin{cases}
-0 & \text{if } i \leq p \\
-\frac{i-p}{n+1} & \text{if } p < i \leq n \\
-1 & \text{if } i > n
-\end{cases}
-\end{equation}
+where $B_{i,p}(u)$ is the $i$th B-spline basis function of degree $p$ at $u$, $P_{i,j}$ is the $i$th control point of the $j$th row, and $w_{i,j}$ is the weight of the $i$th control point of the $j$th row. The degree of the surface is $p$ in the $u$ direction and $q$ in the $v$ direction. The surface is defined on the domain $[u_{0}, u_{n+p+1}] \times [v_{0}, v_{m+q+1}]$, where $u_{0} = v_{0} = 0$ and $u_{n+p+1} = v_{m+q+1} = 1$. 
+% The knot vectors are defined as follows:
 
-\begin{equation}
-\label{eq:3}
-v_{j} = \begin{cases}
-0 & \text{if } j \leq q \\
-\frac{j-q}{m+1} & \text{if } q < j \leq m \\
-1 & \text{if } j > m
-\end{cases}
-\end{equation}
+% \begin{equation}
+% \label{eq:2}
+% u_{i} = \begin{cases}
+% 0 & \text{if } i \leq p \\
+% \frac{i-p}{n+1} & \text{if } p < i \leq n \\
+% 1 & \text{if } i > n
+% \end{cases}
+% \end{equation}
 
-where $n$ and $m$ are the number of control points in the $u$ and $v$ directions, respectively. The knot vectors are non-decreasing, and the knot vectors are clamped at the ends. The knot vectors are also called \textbf{clamped knot vectors}.
+% \begin{equation}
+% \label{eq:3}
+% v_{j} = \begin{cases}
+% 0 & \text{if } j \leq q \\
+% \frac{j-q}{m+1} & \text{if } q < j \leq m \\
+% 1 & \text{if } j > m
+% \end{cases}
+% \end{equation}
 
-\subsection{Creating BVH for NURBS}
+% where $n$ and $m$ are the number of control points in the $u$ and $v$ directions, respectively. The knot vectors are non-decreasing, and the knot vectors are clamped at the ends. The knot vectors are also called \textbf{clamped knot vectors}.
+
+\subsection{Preprocessing}
 
 % TODO: 这里介绍一下如何用NURBS创建BVH (描述细分过程等等)
+In the reprocessing step, 
+similar to what we did in ray tracing a Triangle Mesh, we need to create a BVH for the NURBS surface. The difference is that we need to subdivide the original NURBS surface's control points into a \textbf{refined control mesh}, instead of calculating triangle mesh coordinates directly. 
 
-Similar to what we did in ray tracing a Triangle Mesh, we need to create a BVH for the NURBS surface. The difference is that we need to subdivide the original NURBS surface's control points into a \textbf{refined control mesh}, instead of calculating triangle mesh coordinates directly. 
+The following figure is an intuitive illustration of the NURBS curve's BVH. 
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.3\textwidth]{pictures/bvh.jpg}
+	\caption{A NURBS curve with a series of axis-aligned bounding boxes (AABB) generated. A ray is tested for intersection with AABBs.}
+\end{figure}
 
 Flattening TODO:
 
-BVH TODO:
-
-In order for an accurate initial guess during intersection test, we need to refine, or subdivide the control mesh into a finer one. We use a curvature-based refinement of knot vectors. The number of knots going to be added is based on the curvature of the surface (?). 
+In order for an accurate initial guess during intersection test, we need to refine, or subdivide the control mesh into a finer one. We use a curvature-based refinement of knot vectors. We need to ensure that the result meets some flatness criteria, in order for generating an accurate bounding box. The number of knots going to be added is based on the curvature of the surface (?). 
 
 \[
-	n_1 = C_1 \cdot \max_{t_i, t_{i+1}} \{ curvatre \}	
+	n = C \cdot \max_{t_i, t_{i+1}} \{ \mathrm{curvature}(\mathbf{c(t)}) \} \cdot \mathrm{arclen}(\mathbf{c}(t))_{[t_i, t_{i+1})}^{3/2}	
 \]
+
+where $C$ is a fineness constant parameter to be adjusted. 
+
+The arc length of $\mathbf{c}$ is given by \[
+	\int_{t_i}^{t_{i+1}} |\mathbf{c}'(t) | dt 
+	= \mathrm{avg}_{[t_i, t_{i+1})} \{ |\mathbf{c}'(t)| \} \cdot (t_{i+1} - t_i)	
+\]
+
+The curvature is defined as \[\begin{aligned}
+	\mathrm{curvature}(\mathbf{c}(t)) &= 
+	\frac{|\mathbf{c}''(t) \times \mathbf{c}'(t)|}{|\mathbf{c}'(t)|^3}\\
+	&= \frac{|\mathbf{c}''(t)| |\sin(\theta)|}{|\mathbf{c}'(t)|^2}\\
+	&\leq \frac{|\mathbf{c}''(t)|}{|\mathbf{c}'(t)|^2}
+\end{aligned}\]
+
+We assume the curvature is $\frac{|\mathbf{c}''(t)|}{|\mathbf{c}'(t)|^2}$ since in this way the curvature estimate will be higher, meaning we will refine slightly higher rather than not enough. 
+
+BVH TODO:
+
+After generating the refined control mesh, we build a bounding volume hierarchy, or BVH. The leaf nodes are 
 
 \subsection{Ray Tracing NURBS Directly}
 
@@ -145,16 +181,22 @@ In this way, an intersection point on the surface $\mathbf{S}$ can be found by s
 	\mathbf{P}_2 \cdot (\mathbf{S}(u, v), 1) = 0
 \end{cases}\]
 
-Note that we are solving for $u$ and $v$ values during intersection, instead of direcly getting the intersection point information. That's why we are ray tracing NURBS directly.
+Note that this transformation allows the intersection of the ray with the patch to be found by solving for $u$ and $v$ parameters, instead of direcly getting the intersection point information in 3D space. That's why we are ray tracing NURBS directly, which potentially saves computation time.
 
 \subsubsection{Ray-Bezier-Patch Intersection Test}
 
 % 这里介绍如何计算ray和bezier patch的交点（牛顿迭代法）
 \ 
 
-One of the most important part in ray tracing NURBS is to calculate intersection between a ray and a surface patch. We are going to solve this problem by \textit{Newton-Rhapson method}. 
+One of the most important part in ray tracing NURBS is to calculate intersection between a ray and a surface patch. We are going to solve this problem by \textit{Newton-Rhapson method}. The general idea is that, we start from an initial guess, and compute the tangent line to approximate the function and calculate the $x$-intercept of it. 
 
-We start from an initial guess of $u$ and $v$, which is the mid point of the valid range. We iterate the following until convergence: 
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.3\textwidth]{pictures/newton-iteration.jpg}
+	\caption{Newton-Rhapson method's iteration. The root is $x$, the original guess is $x_n$, and the new guess is $x_{n+1}$. The new guess is closer to the root.}
+\end{figure}
+
+In ray tracing NURBS, we start from an initial guess of $u$ and $v$, which is the mid point of the valid range. We iterate the following until convergence: 
 
 \[
 	\left(\begin{matrix}
@@ -164,10 +206,7 @@ We start from an initial guess of $u$ and $v$, which is the mid point of the val
 	\left(\begin{matrix}
 		u_n \\ v_n
 	\end{matrix}\right) - 
-	\left(\begin{matrix}
-		\frac{\partial f}{\partial u} & \frac{\partial f}{\partial v} \\
-		\frac{\partial g}{\partial u} & \frac{\partial g}{\partial v}
-	\end{matrix}\right)^{-1}
+	\left(\mathbf{J}\right)^{-1}
 	\left(\begin{matrix}
 		f(u_n, v_n) \\ g(u_n, v_n)
 	\end{matrix}\right)
@@ -226,25 +265,56 @@ If the Jacobian is singular, we iterate by the following equation
 		\mathrm{drand48}() \cdot (u_0 - u_k)\\
 		\mathrm{drand48}() \cdot (v_0 - v_k)\\
 	\end{matrix}\right)
-\] where $\mathrm{drand48()}$ returns a random floating number between $0$ and $1$.
+\] where $\mathrm{drand48()}$ returns a random floating number between $0.0$ and $1.0$.
 
-% Starting from an initial guess of $u$ and $v$, it iteratively find better approximations of the intersection point, and can converge towards the correct root or find that the root does not exist.
+The pseudo code is given as follows:  
+
+% \begin{lstlisting}[language=c++]
+% \end{lstlisting}
 
 
-\subsection{Evaluation}
+\subsubsection{Point Derivative Evaluation}
 
-TODO: 
+% TODO: 这里要写如何求point (u,v)的导数，也就是论文中的2.4 Evaluation 这一章
+
+In the above section, we need to calculate the Jacobian matrix which consists of four derivatives. We will explain how to calculate these derivatives in this part. 
+
+\[
+	\mathbf{S}(u_*, v_*) = \mathbf{D}_{\mu_u - \mathbf{k}_u + \mathbf{1}, \mu_v - \mathbf{k}_v + \mathbf{1}}	
+\] 
+\[\begin{aligned}
+	\mathbf{S_u}(u_*, v_*) =& \frac{
+		(k_u-1)\omega_{\mu_u - k_u + 2, \mu_v - k_v + 1}
+	}{
+		(u_{\mu_u + 1} - u_*)\omega_{\mu_u - k_u + 1, \mu_v - k_v + 1}
+	}\cdot \\ &\left[
+		\mathbf{D}_{\mu_u - \mathbf{k}_u + \mathbf{2}, \mu_v - \mathbf{k}_v + \mathbf{1}} - 
+		\mathbf{D}_{\mu_u - \mathbf{k}_u + \mathbf{2}, \mu_v - \mathbf{k}_v + \mathbf{1}}
+	\right]
+\end{aligned}
+\]
+\[\begin{aligned}
+	\mathbf{S_v}(u_*, v_*) =& \frac{
+		(k_v-1)\omega_{\mu_u - k_u + 1, \mu_v - k_v + 2}
+	}{
+		(v_{\mu_v + 1} - v_*)\omega_{\mu_u - k_u + 1, \mu_v - k_v + 1}
+	}\cdot \\ &\left[
+		\mathbf{D}_{\mu_u - \mathbf{k}_u + \mathbf{1}, \mu_v - \mathbf{k}_v + \mathbf{2}} - 
+		\mathbf{D}_{\mu_u - \mathbf{k}_u + \mathbf{2}, \mu_v - \mathbf{k}_v + \mathbf{1}}
+	\right]
+\end{aligned}
+\]
 
 \section{Results}
 
 % TODO: bug没修完还没画出来。
 
-% \begin{figure}[H]
-% 	\centering
-% 	\includegraphics[width=0.5\textwidth]{results/result600.png}
-% 	\caption{A NURBS ball}
-% 	\label{fig:result1}
-% \end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.4\textwidth]{results/result600.png}
+	\caption{A NURBS ball}
+	\label{fig:result1}
+\end{figure}
 
 
 
