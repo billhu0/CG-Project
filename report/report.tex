@@ -274,10 +274,30 @@ The pseudo code is given as follows:
 
 
 \subsubsection{Point Derivative Evaluation}
+\ 
 
 % TODO: 这里要写如何求point (u,v)的导数，也就是论文中的2.4 Evaluation 这一章
 
-In the above section, we need to calculate the Jacobian matrix which consists of four derivatives. We will explain how to calculate these derivatives in this part. 
+In the above section, we need to calculate the Jacobian matrix which consists of four derivatives. We will explain how to calculate these derivatives of the NURBS curve in this part. 
+
+The first-order derivative of a NURBS curve is obtained by \[
+	\mathbf{C}'(t) = \frac{w(t) \mathbf{D}'(t) - \mathbf{D}(t)w'(t)}{w^2(t)}	
+\] where \[
+	\mathbf{D}'(t) = \sum_{i=1}^n w_i \mathbf{P_i} \mathbf{N}_i^p(t)'
+\] and \[
+	w'(t) = \sum_{i=1}^n w_i \mathbf{N}_i^p(t)'	
+\] 
+
+Recall that we can generalize a NURBS curve into a NURBS surface by
+\[
+	\mathbf{S}(u,v) = \frac{
+		\sum_{j=0}^{m-1} \left[ \sum_{i=0}^{n-1} w_{ij} \mathbf{P}_{ij} \mathbf{N}_i^p(u) \right] \mathbf{N}_j^q(v)
+	}{
+		\sum_{j=0}^{m-1} \left[ \sum_{i=0}^{n-1} w_{ij} \mathbf{N}_i^p(u) \right]
+	}	\equiv \frac{\mathbf{D}(u,v)}{w(u,v)}
+\]
+
+By applying the formula above, we can get the first-order partial derivatives of a NURBS surface.
 
 \[
 	\mathbf{S}(u_*, v_*) = \mathbf{D}_{\mu_u - \mathbf{k}_u + \mathbf{1}, \mu_v - \mathbf{k}_v + \mathbf{1}}	
