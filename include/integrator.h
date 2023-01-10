@@ -6,18 +6,18 @@
 #include "interaction.h"
 
 class Integrator {
- public:
-  Integrator(std::shared_ptr<Camera> cam,
-             std::shared_ptr<Scene> scene, int spp, int max_depth);
-  void render() const;
-  Vec3f radiance(Ray &ray, Sampler &sampler) const;
- private:
-  Vec3f MIS(Vec3f value1, float pdf1, Vec3f value2, float pdf2) const;
-  Vec3f directLighting(Interaction &interaction, Sampler &sampler, bool &isDelta) const;
-  std::shared_ptr<Camera> camera;
-  std::shared_ptr<Scene> scene;
-  int max_depth;
-  int spp;
+   public:
+    Integrator(std::shared_ptr<Camera> cam, std::shared_ptr<Scene> scene, int spp, int max_depth);
+    void render() const;
+    Vec3f radiance(Ray &ray, Sampler &sampler) const;
+
+   private:
+    Vec3f MIS(const Vec3f& value1, float pdf1, const Vec3f& value2, float pdf2) const;
+    Vec3f directLighting(Interaction &interaction, Sampler &sampler, bool &isDelta) const;
+    std::shared_ptr<Camera> camera;
+    std::shared_ptr<Scene> scene;
+    int max_depth;
+    int spp;
 };
 
-#endif //INTEGRATOR_H_
+#endif  // INTEGRATOR_H_
