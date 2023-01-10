@@ -2,6 +2,10 @@
 
 Greetings from Group 10 (Xiyue Peng `<pengxy1>` and Luojia Hu `<hulj>`) !
 
+## Report
+
+Our report is in `report/` directory.
+
 ## Usage
 
 ### Libs
