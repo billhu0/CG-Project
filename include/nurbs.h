@@ -21,7 +21,7 @@ class NURBSCurve {
     void setControlPointAndWeight(int i, Vec3f control_ponit, float w);
     void setKnot(int i, float knot);
     void setKnots(std::vector<float> knots);
-    void setKnotUniform();
+    [[maybe_unused]] void setKnotUniform();
     std::pair<Vertex, float> evaluate(float t);
 };
 
@@ -37,7 +37,7 @@ class NURBSSurface {
    public:
     NURBSSurface(int m, int n, int degreem, int degreen);
 
-    void setControlPointAndWeight(int i, int j, Vec3f control_point, float w);
+    void setControlPointAndWeight(int i, int j, const Vec3f& control_point, float w);
     void setKnotM(int i, float knot);
     void setKnotMUniform();
     void setKnotN(int i, float knot);

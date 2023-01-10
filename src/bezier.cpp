@@ -2,7 +2,6 @@
 
 #include <utility>
 #include <vector>
-#include <string>
 
 NURBSPatch::NURBSPatch(int m, int n, Vec2f range_u, Vec2f range_v) {
     control_points_.resize(m);
@@ -22,44 +21,44 @@ void NURBSPatch::setControlPointAndWeight(int i, int j, Vec3f point, float weigh
     control_points_[i][j] = wpoint;
 }
 
-void NURBSPatch::setParameter(std::vector<float> knots_u, std::vector<float> knots_v) {
+[[maybe_unused]] void NURBSPatch::setParameter(std::vector<float> knots_u, std::vector<float> knots_v) {
     knots_u_ = std::move(knots_u);
     knots_v_ = std::move(knots_v);
 }
 
-std::pair<std::vector<float>, std::vector<float>> NURBSPatch::EvaluateBasisFunctionDivisionFree_u(float t) const {
+[[maybe_unused]] std::pair<std::vector<float>, std::vector<float>> NURBSPatch::EvaluateBasisFunctionDivisionFree_u(float t) const {
     std::vector<float> N, D;
     N.resize(degree_u_ + 1);
     D.resize(degree_u_ + 1);
     N[0] = 0.0f;
     for (int j = 1; j <= degree_u_; ++j) {
-        D[j] = degree_u_ * (au[j][degree_u_] * N[j - 1]);
-        N[j] = degree_u_ * (au[j][degree_u_] + cu[j][degree_u_]) * N[j - 1];
+        D[j] = (float)degree_u_ * (au[j][degree_u_] * N[j - 1]);
+        N[j] = (float)degree_u_ * (au[j][degree_u_] + cu[j][degree_u_]) * N[j - 1];
         for (int kk = j - 1; kk > 0; --kk) {
             auto k = degree_u_ - j + kk;
-            D[kk] = degree_u_ * (au[j][k] * N[kk] - bu[j][k] * N[kk + 1]);
+            D[kk] = (float)degree_u_ * (au[j][k] * N[kk] - bu[j][k] * N[kk + 1]);
             N[kk] = (au[j][k] * t + cu[j][k]) * N[kk] + (bu[j][k] * t + du[j][k]) * N[kk + 1];
         }
-        D[0] = degree_u_ * (-au[j][degree_u_ - j]);
+        D[0] = (float)degree_u_ * (-au[j][degree_u_ - j]);
         N[0] = (au[j][degree_u_ - j] * t + cu[j][degree_u_ - j]) * N[j];
     }
     return {N, D};
 }
 
-std::pair<std::vector<float>, std::vector<float>> NURBSPatch::EvaluateBasisFunctionDivisionFree_v(float t) const {
+[[maybe_unused]] std::pair<std::vector<float>, std::vector<float>> NURBSPatch::EvaluateBasisFunctionDivisionFree_v(float t) const {
     std::vector<float> N, D;
     N.resize(degree_v_ + 1);
     D.resize(degree_v_ + 1);
     N[0] = 0.0f;
     for (int j = 1; j <= degree_v_; ++j) {
-        D[j] = degree_v_ * (av[j][degree_v_] * N[j - 1]);
-        N[j] = degree_v_ * (av[j][degree_v_] + cv[j][degree_v_]) * N[j - 1];
+        D[j] = (float)degree_v_ * (av[j][degree_v_] * N[j - 1]);
+        N[j] = (float)degree_v_ * (av[j][degree_v_] + cv[j][degree_v_]) * N[j - 1];
         for (int kk = j - 1; kk > 0; --kk) {
             auto k = degree_v_ - j + kk;
-            D[kk] = degree_v_ * (av[j][k] * N[kk] - bv[j][k] * N[kk + 1]);
+            D[kk] = (float)degree_v_ * (av[j][k] * N[kk] - bv[j][k] * N[kk + 1]);
             N[kk] = (av[j][k] * t + cv[j][k]) * N[kk] + (bv[j][k] * t + dv[j][k]) * N[kk + 1];
         }
-        D[0] = degree_v_ * (-av[j][degree_v_ - j]);
+        D[0] = (float)degree_v_ * (-av[j][degree_v_ - j]);
         N[0] = (av[j][degree_v_ - j] * t + cv[j][degree_v_ - j]) * N[j];
     }
     return {N, D};
@@ -111,7 +110,7 @@ void NURBSPatch::setKnots(std::vector<float>& knots_u, std::vector<float>& knots
 }
 
 std::pair<std::vector<float>, std::vector<float>> 
-NURBSPatch::EvaluateBasisFunctionDirect(float t, std::vector<float> knots, int p, int i) const {
+NURBSPatch::EvaluateBasisFunctionDirect(float t, std::vector<float> knots, int p, int i) {
     // Compute all non-zero B-spline basis functions and derivatives
     std::vector<float> N, D;
     N.resize(p + 1);
@@ -133,17 +132,17 @@ NURBSPatch::EvaluateBasisFunctionDirect(float t, std::vector<float> knots, int p
             // printf("%f\n", Q);
             N[k] = Rn + r[k + 1] * Q;
             Rn = l[j - k] * Q;
-            D[k] = p * (Rd - Q);
+            D[k] = (float)p * (Rd - Q);
             Rd = Q;
         }
         N[j] = Rn;
-        D[j] = p * Rd;
+        D[j] = (float)p * Rd;
         // printf("%d %f %f\n", j, N[j], D[j]);
     }
     return {N, D};
 }
 
-int NURBSPatch::find_i(float t, std::vector<float> knots) const {
+int NURBSPatch::find_i(float t, std::vector<float> knots) {
     for (int i = 0; i < knots.size() - 1; ++i) {
         if (knots[i] <= t && knots[i + 1] > t) return i;
         if (knots[i + 1] == knots[knots.size() - 1] && t == knots[i + 1]) return i;

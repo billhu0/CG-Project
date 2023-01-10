@@ -25,7 +25,7 @@ void Integrator::render() const {
             // Generate #spp rays for each pixel and use Monte Carlo integration to compute radiance.
             for (int i = 0; i < spp; ++i) {
                 auto epsilon = sampler.get2D();
-                Ray camera_ray = camera->generateRay(dx + epsilon.x(), dy + epsilon.y());
+                Ray camera_ray = camera->generateRay((float)dx + epsilon.x(), (float)dy + epsilon.y());
                 L += radiance(camera_ray, sampler);
             }
             camera->getImage()->setPixel(dx, dy, L / float(spp));
@@ -77,14 +77,14 @@ Vec3f Integrator::radiance(Ray &ray, Sampler &sampler) const {
     return L;
 }
 
-Vec3f Integrator::MIS(const Vec3f& value1, float pdf1, const Vec3f& value2, float pdf2) const {
+Vec3f Integrator::MIS(const Vec3f& value1, float pdf1, const Vec3f& value2, float pdf2) {
     float sum = pdf1 * pdf1 + pdf2 * pdf2;
     float w1 = pdf1 * pdf1 / sum;
     float w2 = pdf2 * pdf2 / sum;
     return value1 * w1 + value2 * w2;
 }
 
-Vec3f Integrator::directLighting(Interaction &interaction, Sampler &sampler, bool &isDelta) const {
+Vec3f Integrator::directLighting(Interaction &interaction, Sampler &sampler, [[maybe_unused]] bool &isDelta) const {
     Vec3f L(0, 0, 0);
     // Compute direct lighting.
     // printf("hit\n");

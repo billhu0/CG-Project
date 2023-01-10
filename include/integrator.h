@@ -12,7 +12,7 @@ class Integrator {
     Vec3f radiance(Ray &ray, Sampler &sampler) const;
 
    private:
-    Vec3f MIS(const Vec3f& value1, float pdf1, const Vec3f& value2, float pdf2) const;
+    static Vec3f MIS(const Vec3f& value1, float pdf1, const Vec3f& value2, float pdf2) ;
     Vec3f directLighting(Interaction &interaction, Sampler &sampler, bool &isDelta) const;
     std::shared_ptr<Camera> camera;
     std::shared_ptr<Scene> scene;

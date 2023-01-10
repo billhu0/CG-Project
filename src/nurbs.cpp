@@ -2,7 +2,6 @@
 #include <utility>
 #include <vector>
 #include <sstream>
-#include <utility>
 
 // bool debug = false;
 
@@ -41,8 +40,8 @@ void NURBSCurve::setKnots(std::vector<float> knots) {
     knots_ = std::move(knots);
 }
 
-void NURBSCurve::setKnotUniform() {
-    int n = control_points_.size();
+[[maybe_unused]] void NURBSCurve::setKnotUniform() {
+    int n = (int)control_points_.size();
     float delta = 1.0f / (float)(n - degree_);
     for (int i = 0; i < knots_.size(); ++i) {
         if (i < degree_)
@@ -97,7 +96,7 @@ NURBSSurface::NURBSSurface(int m, int n, int degreem, int degreen) {
     knots_n_.resize(n + degreen + 1);
 }
 
-void NURBSSurface::setControlPointAndWeight(int i, int j, Vec3f control_point, float w) {
+void NURBSSurface::setControlPointAndWeight(int i, int j, const Vec3f& control_point, float w) {
     control_points_m_[i][j] = control_point;
     control_points_n_[j][i] = control_point;
     w_m_[i][j] = w;
@@ -115,7 +114,7 @@ void NURBSSurface::setKnotN(int i, float knot) {
 Vertex NURBSSurface::evaluate(float u, float v) {
     // evaluate
     Vertex point_m, point_n, point;
-    NURBSCurve curve_m(control_points_m_.size(), degree_m_);
+    NURBSCurve curve_m((int)control_points_m_.size(), degree_m_);
     curve_m.setKnots(knots_m_);
     for (int i = 0; i < control_points_m_.size(); ++i) {
         NURBSCurve tmp(control_points_m_[i], w_m_[i], knots_n_, degree_n_);
@@ -123,7 +122,7 @@ Vertex NURBSSurface::evaluate(float u, float v) {
         curve_m.setControlPointAndWeight(i, tmp_retval.first.position, tmp_retval.second);
     }
     point_m = curve_m.evaluate(u).first;
-    NURBSCurve curve_n(control_points_n_.size(), degree_n_);
+    NURBSCurve curve_n((int)control_points_n_.size(), degree_n_);
     curve_n.setKnots(knots_n_);
     for (int i = 0; i < control_points_n_.size(); ++i) {
         NURBSCurve tmp(control_points_n_[i], w_n_[i], knots_m_, degree_m_);
@@ -204,7 +203,7 @@ std::shared_ptr<TriangleMesh> NURBSSurface::genMesh_triangle(const Vec3f &transl
 }
 
 void NURBSSurface::setKnotMUniform() {
-    int n = control_points_m_.size();
+    int n = (int)control_points_m_.size();
     float delta = 1.0f / (float)(n - degree_m_);
     for (int i = 0; i < knots_m_.size(); ++i) {
         if (i < degree_m_)
@@ -217,7 +216,7 @@ void NURBSSurface::setKnotMUniform() {
 }
 
 void NURBSSurface::setKnotNUniform() {
-    int n = control_points_n_.size();
+    int n = (int)control_points_n_.size();
     float delta = 1.0f / (float)(n - degree_n_);
     for (int i = 0; i < knots_n_.size(); ++i) {
         if (i < degree_n_)
@@ -236,7 +235,7 @@ std::shared_ptr<PatchMesh> NURBSSurface::genMesh_patch(const Vec3f &translation,
     float C = 10.0f;
     // generate V and A
     std::vector<std::vector<Vec3f>> V_m, V_n, A_m, A_n;
-    int m = control_points_m_.size(), n = control_points_n_.size();
+    int m = (int)control_points_m_.size(), n = (int)control_points_n_.size();
     V_m.resize(m);
     A_m.resize(m);
     V_n.resize(n);

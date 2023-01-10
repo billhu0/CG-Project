@@ -15,7 +15,7 @@ class BSDF {
 
 class IdealDiffusion : public BSDF {
    public:
-    explicit IdealDiffusion(const Vec3f &color);
+    explicit IdealDiffusion(Vec3f color);
     [[nodiscard]] Vec3f evaluate(Interaction &interaction) const override;
     float pdf(Interaction &interaction) const override;
     float sample(Interaction &interaction, Sampler &sampler) const override;
@@ -29,7 +29,7 @@ class IdealDiffusion : public BSDF {
 
 class IdealSpecular : public BSDF {
    public:
-    explicit IdealSpecular(const Vec3f &color);
+    explicit IdealSpecular(Vec3f color);
     [[nodiscard]] Vec3f evaluate(Interaction &interaction) const override;
     float pdf(Interaction &interaction) const override;
     float sample(Interaction &interaction, Sampler &sampler) const override;

@@ -32,7 +32,7 @@ struct AABB {
         return upper_bnd[dim] - low_bnd[dim];
     }
     /// Check whether the AABB is overlapping with another AABB
-    [[nodiscard]] bool isOverlap(const AABB &other) const;
+    [[maybe_unused]] [[nodiscard]] bool isOverlap(const AABB &other) const;
     [[nodiscard]] float getSurfaceArea() const;
 };
 

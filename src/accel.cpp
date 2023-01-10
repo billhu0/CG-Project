@@ -26,7 +26,8 @@ AABB::AABB(const AABB &a, const AABB &b) {
     low_bnd = a.low_bnd.cwiseMin(b.low_bnd);
     upper_bnd = a.upper_bnd.cwiseMax(b.upper_bnd);
 }
-bool AABB::isOverlap(const AABB &other) const {
+
+[[maybe_unused]] bool AABB::isOverlap(const AABB &other) const {
     return ((other.low_bnd[0] >= this->low_bnd[0] && other.low_bnd[0] <= this->upper_bnd[0]) ||
             (this->low_bnd[0] >= other.low_bnd[0] && this->low_bnd[0] <= other.upper_bnd[0])) &&
            ((other.low_bnd[1] >= this->low_bnd[1] && other.low_bnd[1] <= this->upper_bnd[1]) ||
@@ -38,9 +39,9 @@ bool AABB::isOverlap(const AABB &other) const {
 bool AABB::intersect(const Ray &ray, float *t_in, float *t_out) {
     // intersection test for bounding box
     // ray distance for two intersection points are returned by pointers.
-    float dir_frac_x = (ray.direction[0] == 0.0) ? 1.0e32 : 1.0 / ray.direction[0];
-    float dir_frac_y = (ray.direction[1] == 0.0) ? 1.0e32 : 1.0 / ray.direction[1];
-    float dir_frac_z = (ray.direction[2] == 0.0) ? 1.0e32 : 1.0 / ray.direction[2];
+    float dir_frac_x = (ray.direction[0] == 0.0) ? 1.0e32f : 1.0f / ray.direction[0];
+    float dir_frac_y = (ray.direction[1] == 0.0) ? 1.0e32f : 1.0f / ray.direction[1];
+    float dir_frac_z = (ray.direction[2] == 0.0) ? 1.0e32f : 1.0f / ray.direction[2];
 
     float tx1 = (low_bnd[0] - ray.origin[0]) * dir_frac_x;
     float tx2 = (upper_bnd[0] - ray.origin[0]) * dir_frac_x;

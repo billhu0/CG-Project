@@ -1,11 +1,11 @@
 #include "bsdf.h"
-#include "utils.h"
 
 #include <utility>
+#include "utils.h"
 
 const float default_delta = 1e-7;
 
-IdealDiffusion::IdealDiffusion(const Vec3f &color) : color(color) { }
+IdealDiffusion::IdealDiffusion(Vec3f color) : color(std::move(color)) { }
 
 Vec3f IdealDiffusion::evaluate(Interaction &interaction) const {
     return color * INV_PI;
@@ -38,7 +38,7 @@ bool IdealDiffusion::isDelta() const {
 }
 
 // Ideal Specular
-IdealSpecular::IdealSpecular(const Vec3f &color) : color(color) { }
+IdealSpecular::IdealSpecular(Vec3f color) : color(std::move(color)) { }
 
 Vec3f IdealSpecular::evaluate(Interaction &interaction) const {
     return color * pdf(interaction);

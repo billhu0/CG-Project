@@ -35,7 +35,7 @@ bool TriangleMesh::intersect(Ray &ray, Interaction &interaction) const {
     return interaction.type != Interaction::Type::NONE;
 }
 
-void TriangleMesh::print_triangle_mesh() {
+[[maybe_unused]] void TriangleMesh::print_triangle_mesh() {
     for (auto v : vertices) printf("v %f %f %f\n", v.x(), v.y(), v.z());
     for (auto n : normals) printf("n %f %f %f\n", n.x(), n.y(), n.z());
     printf("v_indx : ");
@@ -56,7 +56,7 @@ void TriangleMesh::genAABB_for_BVH(BVHNode *now) {
 }
 
 float TriangleMesh::calCost(const AABB& a, int numa, const AABB& b, int numb, const AABB& N) {
-    return a.getSurfaceArea() / N.getSurfaceArea() * numa + b.getSurfaceArea() / N.getSurfaceArea() * numb;
+    return a.getSurfaceArea() / N.getSurfaceArea() * (float)numa + b.getSurfaceArea() / N.getSurfaceArea() * (float)numb;
 }
 
 int TriangleMesh::getPartitionMethod(BVHNode *now) {
@@ -150,7 +150,7 @@ void TriangleMesh::buildBVH_partition(BVHNode *now, int pre_axis) {
 
 int TriangleMesh::DFS_BVHTree(BVHNode *now) {
     lbvh.emplace_back();
-    int pos = lbvh.size() - 1;
+    int pos = (int)lbvh.size() - 1;
     if (now->partition_axis == -1) {
         lbvh[pos].set(now, -1);
         return 1;
@@ -253,7 +253,7 @@ void PatchMesh::genAABB_for_BVH(BVHNode *now) {
 
 float PatchMesh::calCost(const AABB& a, int numa, const AABB& b, int numb, const AABB& N) {
     // Calculate the SAH cost
-    return a.getSurfaceArea() / N.getSurfaceArea() * numa + b.getSurfaceArea() / N.getSurfaceArea() * numb;
+    return a.getSurfaceArea() / N.getSurfaceArea() * (float)numa + b.getSurfaceArea() / N.getSurfaceArea() * (float)numb;
 }
 
 int PatchMesh::getPartitionMethod(BVHNode *now) {
@@ -351,7 +351,7 @@ void PatchMesh::buildBVH_partition(BVHNode *now, int pre_axis) {
 int PatchMesh::DFS_BVHTree(BVHNode *now) {
     // TODO : travel the bvh tree to get the DFS order
     lbvh.emplace_back();
-    int pos = lbvh.size() - 1;
+    int pos = (int)lbvh.size() - 1;
     if (now->partition_axis == -1) {
         lbvh[pos].set(now, -1);
         return 1;
@@ -394,9 +394,7 @@ void PatchMesh::lbvhHit(Interaction &interaction, Ray &ray) const {
             if (now.num != -1) {
                 for (int j = 0; j < now.num; ++j) {
                     int i = patch_indices[now.object_offset + j];
-                    bool tag = false;
                     auto patch = patches[i];
-                    int step = 10;
                     Interaction temp1, temp2;
                     float initial_u = (patches[i].range_u_.x() + patches[i].range_u_.y()) / 2.0f;
                     float initial_v = (patches[i].range_v_.x() + patches[i].range_v_.y()) / 2.0f;
@@ -507,8 +505,8 @@ bool PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const NURB
 
         // if J is singular
         if (std::abs(J.determinant()) < eps) {
-            u += 0.1 * (u_initial - u) * drand48();
-            v += 0.1 * (v_initial - v) * drand48();
+            u += 0.1f * (u_initial - u) * (float)drand48();
+            v += 0.1f * (v_initial - v) * (float)drand48();
         } else {
             // u -= J.inverse().transpose().col(0).dot(R);
             // v -= J.inverse().transpose().col(1).dot(R);

@@ -33,13 +33,13 @@ class TriangleMesh : public Mesh {
     // void setMaterial(std::shared_ptr<BSDF> &new_bsdf) override;
 
     void buildBVH() override;
-    void print_triangle_mesh();
+    [[maybe_unused]] void print_triangle_mesh();
 
    protected:
     AABB getTriangle(int pos);
     void buildBVH_partition(BVHNode *now, int pre_axis);
     int getPartitionMethod(BVHNode *now);
-    float calCost(const AABB& a, int numa, const AABB& b, int numb, const AABB& N);
+    static float calCost(const AABB& a, int numa, const AABB& b, int numb, const AABB& N);
     int DFS_BVHTree(BVHNode *now);
     void genAABB_for_BVH(BVHNode *now);
     void sort_aabb(int begin, int end, int axis);
@@ -72,7 +72,7 @@ class PatchMesh : public Mesh {
     bool intersectOnePatch(Ray &ray, Interaction &interaction, const NURBSPatch &patch, Vec2f initial_val) const;
     AABB getPatch(int pos);
     void genAABB_for_BVH(BVHNode *now);
-    float calCost(const AABB& a, int numa, const AABB& b, int numb, const AABB& N);
+    static float calCost(const AABB& a, int numa, const AABB& b, int numb, const AABB& N);
     int getPartitionMethod(BVHNode *now);
     void sort_aabb(int begin, int end, int axis);
     void buildBVH_partition(BVHNode *now, int pre_axis);
