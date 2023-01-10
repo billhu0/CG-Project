@@ -4,7 +4,7 @@
 #include <iostream>
 #include <queue>
 
-constexpr const int debug_flag = 0;
+
 
 void Mesh::setMaterial(std::shared_ptr<BSDF> &new_bsdf) {
   bsdf = new_bsdf;
@@ -293,6 +293,7 @@ const AABB PatchMesh::getPatch(int pos)
 void 
 PatchMesh::genAABB_for_BVH(BVHNode* now)
 {
+
   now->aabb = getPatch(now->begin);
   for(int i = 1; i < now->num; ++ i)
   {
@@ -304,11 +305,13 @@ PatchMesh::genAABB_for_BVH(BVHNode* now)
 
 float PatchMesh::calCost(AABB a, int numa, AABB b, int numb, AABB N)
 {
+  //TODO : caculate the SAH cost
   return a.getSurfaceArea() / N.getSurfaceArea() * numa + b.getSurfaceArea() / N.getSurfaceArea() * numb;
 }
 
 int PatchMesh::getPartitionMethod(BVHNode* now)
 {
+  //TODO : SAH
   int l = now->begin, r = now->begin + now->num - 1;
   int num = now->num;
   int lsize = 1;
@@ -335,6 +338,7 @@ int PatchMesh::getPartitionMethod(BVHNode* now)
 
 void PatchMesh::sort_aabb(int begin, int end, int axis)
 {
+  //TODO : sort the aabb to partition
   if(begin >= end) return;
   // if(debug_flag == 1) printf("%d %d\n", begin, end);
   AABB pivot_aabb = patch_AABB[begin];
@@ -378,6 +382,7 @@ void PatchMesh::sort_aabb(int begin, int end, int axis)
 
 void PatchMesh::buildBVH_partition(BVHNode* now, int pre_axis)
 {
+  //TODO partition now node into two child node
   genAABB_for_BVH(now);
   // printf("%d %d\n", now->begin, now->num);
   // printf("%f %f %f\n", now->aabb.getDist(0), now->aabb.getDist(1), now->aabb.getDist(2));
@@ -414,6 +419,7 @@ void PatchMesh::buildBVH_partition(BVHNode* now, int pre_axis)
 
 int PatchMesh::DFS_BVHTree(BVHNode* now)
 {
+  //TODO : travel the bvh tree to get the DFS order
   lbvh.push_back(LBVH());
   int pos = lbvh.size() - 1; 
   if(now->partition_axis == -1)
@@ -430,6 +436,7 @@ int PatchMesh::DFS_BVHTree(BVHNode* now)
 void
 PatchMesh::buildBVH()
 {
+  //TODO ; get the linear bvh
   BVHNode *bvh;
   for(int i = 0; i < patches.size(); ++ i)
   {
@@ -591,7 +598,6 @@ PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const NURBSPatc
     }
     error_prev = std::abs(error);
     // J = compute Jacobian matrix
-    // FIXME: 这里是 S_u(u, v), 应该不能直接patch.evaluate?
     auto ress = patch.evaluate(u, v).second;
     Vec2f Fu = {N1.dot(ress.first), N2.dot(ress.first)};
     Vec2f Fv = {N1.dot(ress.second), N2.dot(ress.second)};

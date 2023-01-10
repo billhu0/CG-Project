@@ -12,6 +12,8 @@
 //     return ((x.p1 == y.p1) && (x.p2 == y.p2) && (x.p3 == y.p3));
 // }
 
+// bool debug = false;
+
 int 
 NURBSCurve::Findk(float t)
 {
@@ -138,6 +140,7 @@ NURBSSurface::setKnotN(int i, float knot)
 Vertex
 NURBSSurface::evaluate(float u, float v)
 {
+    //evaluate
     Vertex point_m, point_n, point;
     NURBSCurve curve_m(control_points_m_.size(), degree_m_);
     curve_m.setKnots(knots_m_);
@@ -165,6 +168,7 @@ NURBSSurface::evaluate(float u, float v)
 std::shared_ptr<TriangleMesh> 
 NURBSSurface::genMesh_triangle(const Vec3f& translation, float scale)
 {
+    //TODO : evaluate the surface to get a triangle mesh to check the answer
     std::vector<Vec3f> vertices;
     std::vector<Vec3f> normals;
     std::vector<int> v_idx;
@@ -264,44 +268,9 @@ NURBSSurface::setKnotNUniform()
 std::shared_ptr<PatchMesh> 
 NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
 {
+    //sudivision the control point
 
     std::vector<NURBSPatch> patches;
-    // for(int i = 0; i < knots_m_.size() - 1; ++ i)
-    // {
-    //     if(knots_m_[i] == knots_m_[i + 1]) continue;
-    //     for(int j = 0; j < knots_n_.size() - 1; ++ j)
-    //     {
-    //         if(knots_n_[j] == knots_n_[j + 1]) continue;
-    //         NURBSPatch patch(degree_m_ + 1, degree_n_ + 1, i, j, Vec2f(knots_m_[i], knots_m_[i + 1]), Vec2f(knots_n_[j], knots_n_[j + 1]));
-    //         int a = 0, b = 0;
-    //         for(int k = i - degree_m_; k <= i; ++ k)
-    //         {
-    //             for(int l = j - degree_n_; l <= j; ++ l)
-    //             {
-    //                 // printf("pre : %f %f %f\n", control_points_m_[k][l].x(), control_points_m_[k][l].y(), control_points_m_[k][l].z());
-    //                 patch.setControlPointAndWeight(a, b, control_points_m_[k][l] * scale + translation, w_m_[k][l]);
-    //                 // printf("now: %f %f %f %f\n", patch.control_points_[a][b].x(), patch.control_points_[a][b].y(), patch.control_points_[a][b].z(), patch.control_points_[a][b].w());
-    //                 ++ b;
-    //             }
-    //             ++ a;
-    //             b = 0;
-    //         }
-    //         patch.setParameter(knots_m_, knots_n_);
-    //         patch.setKnots(knots_m_, knots_n_);
-    //         patches.push_back(patch);
-    //         // for(int i = 0; i <= patch.knots_u_.size(); ++ i) printf("%f ", patch.knots_u_[i]);
-    //         // printf("\n");
-    //         // for(int i = 0; i <= patch.knots_v_.size(); ++ i) printf("%f ", patch.knots_v_[i]);
-    //         // printf("\n");
-    //         // for(auto vec : patch.control_points_)
-    //         // {
-    //         //     for(auto p : vec) printf("%f %f %f %f\n", p.x(), p.y(), p.z(), p.w());
-    //         // }
-    //         // printf("\n");
-    //     }
-    // }
-    // return std::make_shared<PatchMesh>(patches);
-
     float C = 10.0f;
     //generate V and A
     std::vector<std::vector<Vec3f>> V_m, V_n, A_m, A_n;
@@ -356,7 +325,7 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
             int N = C * maxa * powf(delta, 1.5f) / powf(sumv / degree_m_, 0.5f);
             knots_m_addnum[i] = knots_m_addnum[i] > N ? knots_m_addnum[i] : N;
         }
-        if(knots_m_addnum[i] == 0) knots_m_addnum[i] = (int)std::floor (delta / 0.01f);
+        if(knots_m_addnum[i] == 0) knots_m_addnum[i] = (int)std::floor (delta / 0.001f);
         m_add_sum = m_add_sum + knots_m_addnum[i];
     }
     for(int i = 0; i < knots_n_.size() - 1; ++ i)
@@ -377,7 +346,7 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
             int N = C * maxa * powf(delta, 1.5f) / powf(sumv / degree_n_, 0.5f);
             knots_n_addnum[i] = knots_n_addnum[i] > N ? knots_n_addnum[i] : N;
         }
-        if(knots_n_addnum[i] == 0) knots_n_addnum[i] = (int)std::floor (delta / 0.01f);
+        if(knots_n_addnum[i] == 0) knots_n_addnum[i] = (int)std::floor (delta / 0.001f);
         n_add_sum = n_add_sum + knots_n_addnum[i];
     }
 
@@ -403,14 +372,15 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
     for(int i = 0; i < temp_knots.size() - 1; ++ i)
     {
         if(temp_knots[i] == left || temp_knots[i] == right) continue;
-        else KnotInsertU(knots_m_[i], degree_m_);
+        else KnotInsertU(temp_knots[i], degree_m_);
     }
-
+    // for(auto knot : knots_m_) printf("%f ", knot);
+    // printf("\n");
     left = knots_n_[0]; right = knots_n_[knots_n_.size() - 1];
     temp_knots = knots_n_;
     for(int i = 0; i < temp_knots.size() - 1; ++ i)
     {
-        if(temp_knots[i] == temp_knots[i + 1]) continue;
+        if(temp_knots[i + 1] - temp_knots[i] < EPS) continue;
         int vd = knots_n_addnum[i] + 1;
         float delta = (temp_knots[i + 1] - temp_knots[i]) / vd;
         for(int j = 1; j <= knots_n_addnum[i]; ++ j)
@@ -422,256 +392,10 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
     temp_knots = knots_n_;
     for(int i = 0; i < temp_knots.size() - 1; ++ i)
     {
-        if(temp_knots[i] == left || temp_knots[i] == right) continue;
+        if(temp_knots[i] - left < EPS || right - temp_knots[i] < EPS) continue;
         else KnotInsertV(temp_knots[i], degree_n_);
     }
 
-    //refine the n direction
-    // std::vector<std::vector<Vec3f>> new_control_points_n = control_points_n_;
-    // std::vector<std::vector<float>> new_w_n = w_n_;
-    // std::vector<float> new_knots_m_;
-    // new_knots_m_.resize(knots_m_.size() + m_add_sum * degree_m_);
-    // int new_knots_length_m = 0;
-    // for(int i = 0; i < knots_m_.size(); ++ i) new_knots_m_[i] = knots_m_[i];
-    // new_knots_length_m = knots_m_.size();
-    // for(int ii = 0; ii < knots_m_.size() - 1; ++ ii) 
-    // {
-    //     if(knots_m_[ii] == knots_m_[ii + 1]) continue;
-    //     int vd = knots_m_addnum[ii] + 1;
-    //     float delta = (knots_m_[ii + 1] - knots_m_[ii]) / vd;
-    //     for(int j = 1; j <= knots_m_addnum[ii]; ++ j)
-    //     {
-    //         float t = knots_m_[ii] + j * delta;
-    //         int i = 0;
-    //         for(;i + 1 < new_knots_length_m && (!(new_knots_m_[i] <= t && new_knots_m_[i + 1] > t)); ++ i);
-    //         for(int k = 0; k < control_points_n_.size(); ++ k)
-    //         {
-    //             std::vector<Vec3f> tmp_controlpoints;
-    //             auto sizet = new_control_points_n[k].size() + 1;
-    //             tmp_controlpoints.resize(sizet);
-    //             std::vector<float> tmp_weight;
-    //             tmp_weight.resize(sizet);
-
-    //             for(int l = 0; l <= i - degree_m_; ++ l)
-    //             {
-    //                 tmp_controlpoints[l] = new_control_points_n[k][l];
-    //                 tmp_weight[l] = new_w_n[k][l];
-    //             }
-    //             for(int l = i - degree_m_ + 1; l <= i; ++ l)
-    //             {
-    //                 auto alpha = (t - new_knots_m_[l]) / (new_knots_m_[l + degree_m_] - new_knots_m_[l]);
-    //                 tmp_controlpoints[l] = (1.0f - alpha) * new_control_points_n[k][l - 1] + alpha * new_control_points_n[k][l];
-    //                 tmp_weight[l] = (1.0f - alpha) * new_w_n[k][l - 1] + alpha * new_w_n[k][l];
-    //             }
-    //             for(int l = i + 1; l < sizet; ++ l)
-    //             {
-    //                 tmp_controlpoints[l] = new_control_points_n[k][l - 1];
-    //                 tmp_weight[l] = new_w_n[k][l - 1];                    
-    //             }
-
-    //             new_control_points_n[k] = tmp_controlpoints;
-    //             new_w_n[k] = tmp_weight;
-    //         }
-    //         for(int k = new_knots_length_m - 1; k >= 0; -- k)
-    //         {
-    //             if(new_knots_m_[k] > t) new_knots_m_[k + 1] = new_knots_m_[k];
-    //             else
-    //             {
-    //                 new_knots_m_[k + 1] = t;
-    //                 break;
-    //             }
-    //         }
-    //         new_knots_length_m ++;
-    //     }
-    // }
-    // for(auto x : new_knots_m_) printf("%f ", x);
-    // printf("\n");
-    //close n direction
-    // int length_m = new_knots_length_m;
-    // auto x_knots_m = new_knots_m_;
-    // for(int ii = degree_m_ + 1; ii < length_m - 1 - degree_m_; ++ ii)
-    // {
-    //     for(int j = 0; j < degree_m_ - 1; ++ j)
-    //     {
-    //         float t = x_knots_m[ii];
-    //         // printf("%f\n", t);
-    //         for(int k = 0; k < control_points_n_.size(); ++ k)
-    //         {
-    //             std::vector<Vec3f> tmp_controlpoints;
-    //             auto sizet = new_control_points_n[k].size() + 1;
-    //             tmp_controlpoints.resize(sizet);
-    //             std::vector<float> tmp_weight;
-    //             tmp_weight.resize(sizet);
-    //             int i = 0;
-    //             for(;i + 1 < new_knots_length_m && (!(new_knots_m_[i] <= t && new_knots_m_[i + 1] > t)); ++ i);
-    //             // printf("%d\n",i);
-    //             for(int l = 0; l <= i - degree_m_; ++ l)
-    //             {
-    //                 tmp_controlpoints[l] = new_control_points_n[k][l];
-    //                 tmp_weight[l] = new_w_n[k][l];
-    //             }
-    //             for(int l = i - degree_m_ + 1; l <= i; ++ l)
-    //             {
-    //                 auto alpha = (t - new_knots_m_[l]) / (new_knots_m_[l + degree_m_] - new_knots_m_[l]);
-    //                 tmp_controlpoints[l] = (1.0f - alpha) * new_control_points_n[k][l - 1] + alpha * new_control_points_n[k][l];
-    //                 tmp_weight[l] = (1.0f - alpha) * new_w_n[k][l - 1] + alpha * new_w_n[k][l];
-    //             }
-    //             for(int l = i + 1; l < sizet; ++ l)
-    //             {
-    //                 tmp_controlpoints[l] = new_control_points_n[k][l - 1];
-    //                 tmp_weight[l] = new_w_n[k][l - 1];                    
-    //             }
-
-    //             new_control_points_n[k] = tmp_controlpoints;
-    //             new_w_n[k] = tmp_weight;
-    //         }
-    //         for(int k = new_knots_length_m - 1; k >= 0; -- k)
-    //         {
-    //             if(new_knots_m_[k] > t) new_knots_m_[k + 1] = new_knots_m_[k];
-    //             else
-    //             {
-    //                 new_knots_m_[k + 1] = t;
-    //                 // for(auto x : new_knots_m_) printf("%f ", x);
-    //                 // printf("\n");
-    //                 break;
-    //             }
-    //         }
-    //         new_knots_length_m ++;
-    //     }
-    // }
-
-    // //refine the m direction
-    // std::vector<std::vector<Vec3f>> new_control_points_m;
-    // std::vector<std::vector<float>> new_w_m;
-    // m = new_control_points_n[0].size();
-    // new_control_points_m.resize(m);
-    // new_w_m.resize(m);
-    // for(int i = 0; i < m; ++ i)
-    // {
-    //     int n = new_control_points_n.size();
-    //     new_control_points_m[i].resize(n);
-    //     new_w_m[i].resize(n);
-    //     for(int j = 0; j < n; ++ j)
-    //     {
-    //         new_control_points_m[i][j] = new_control_points_n[j][i];
-    //         new_w_m[i][j] = new_w_n[j][i];
-    //     }
-    // }
-    // std::vector<float> new_knots_n_;
-    // new_knots_n_.resize(knots_n_.size() + n_add_sum * degree_n_);
-    // int new_knots_length_n = 0;
-    // for(int i = 0; i < knots_n_.size(); ++ i) new_knots_n_[i] = knots_n_[i];
-    // new_knots_length_n = knots_n_.size();
-    // for(int ii = 0; ii < knots_n_.size() - 1; ++ ii) 
-    // {
-    //     if(knots_n_[ii] == knots_n_[ii + 1]) continue;
-    //     int ud = knots_n_addnum[ii] + 1;
-    //     float delta = (knots_n_[ii + 1] - knots_n_[ii]) / ud;
-    //     for(int j = 0; j < knots_n_addnum[ii]; ++ j)
-    //     {
-    //         float t = knots_n_[ii] + j * delta;
-    //         int i = 0;
-    //         for(;i + 1 < new_knots_length_n && (!(new_knots_n_[i] <= t && new_knots_n_[i + 1] > t)); ++ i);
-    //         for(int k = 0; k < m; ++ k)
-    //         {
-    //             std::vector<Vec3f> tmp_controlpoints;
-    //             auto sizet = new_control_points_m[k].size() + 1;
-    //             tmp_controlpoints.resize(sizet);
-    //             std::vector<float> tmp_weight;
-    //             tmp_weight.resize(sizet);
-
-    //             for(int l = 0; l <= i - degree_n_; ++ l)
-    //             {
-    //                 tmp_controlpoints[l] = new_control_points_m[k][l];
-    //                 tmp_weight[l] = new_w_m[k][l];
-    //             }
-    //             for(int l = i - degree_n_ + 1; l <= i; ++ l)
-    //             {
-    //                 auto alpha = (t - new_knots_n_[l]) / (new_knots_n_[l + degree_n_] - new_knots_n_[l]);
-    //                 tmp_controlpoints[l] = (1.0f - alpha) * new_control_points_m[k][l - 1] + alpha * new_control_points_m[k][l];
-    //                 tmp_weight[l] = (1.0f - alpha) * new_w_m[k][l - 1] + alpha * new_w_m[k][l];
-    //             }
-    //             for(int l = i + 1; l < sizet; ++ l)
-    //             {
-    //                 tmp_controlpoints[l] = new_control_points_m[k][l - 1];
-    //                 tmp_weight[l] = new_w_m[k][l - 1];                    
-    //             }
-
-    //             new_control_points_m[k] = tmp_controlpoints;
-    //             new_w_m[k] = tmp_weight;
-    //         }
-    //         for(int k = new_knots_length_n - 1; k >= 0; -- k)
-    //         {
-    //             if(new_knots_n_[k] > t) new_knots_n_[k + 1] = new_knots_n_[k];
-    //             else
-    //             {
-    //                 new_knots_n_[k + 1] = t;
-    //                 break;
-    //             }
-    //         }
-    //         new_knots_length_n ++;
-    //     }
-    // }
-    // //close the m direction
-    // int length_n = new_knots_length_n;
-    // auto x_knots_n = new_knots_n_;
-    // for(int ii = degree_n_ + 1; ii < length_n - 1 - degree_n_; ++ ii)
-    // {
-    //     for(int j = 0; j < degree_n_ - 1; ++ j)
-    //     {
-    //         float t = x_knots_n[ii];
-    //         for(int k = 0; k < m; ++ k)
-    //         {
-    //             std::vector<Vec3f> tmp_controlpoints;
-    //             auto sizet = new_control_points_m[k].size() + 1;
-    //             tmp_controlpoints.resize(sizet);
-    //             std::vector<float> tmp_weight;
-    //             tmp_weight.resize(sizet);
-    //             int i = 0;
-    //             for(;i + 1 < new_knots_length_n && (!(new_knots_n_[i] <= t && new_knots_n_[i + 1] > t)); ++ i);
-    //             for(int l = 0; l <= i - degree_n_; ++ l)
-    //             {
-    //                 tmp_controlpoints[l] = new_control_points_m[k][l];
-    //                 tmp_weight[l] = new_w_m[k][l];
-    //             }
-    //             for(int l = i - degree_n_ + 1; l <= i; ++ l)
-    //             {
-    //                 auto alpha = (t - new_knots_n_[l]) / (new_knots_n_[l + degree_m_] - new_knots_n_[l]);
-    //                 // printf("%f %f %f %f\n",new_knots_n_[l],new_knots_n_[l + degree_m_],  t, alpha);
-    //                 tmp_controlpoints[l] = (1.0f - alpha) * new_control_points_m[k][l - 1] + alpha * new_control_points_m[k][l];
-    //                 tmp_weight[l] = (1.0f - alpha) * new_w_m[k][l - 1] + alpha * new_w_m[k][l];
-    //             }
-    //             for(int l = i + 1; l < sizet; ++ l)
-    //             {
-    //                 tmp_controlpoints[l] = new_control_points_m[k][l - 1];
-    //                 tmp_weight[l] = new_w_m[k][l - 1];                    
-    //             }
-
-    //             new_control_points_m[k] = tmp_controlpoints;
-    //             new_w_m[k] = tmp_weight;
-    //         }
-    //         for(int k = new_knots_length_n - 1; k >= 0; -- k)
-    //         {
-    //             if(new_knots_n_[k] > t) new_knots_n_[k + 1] = new_knots_n_[k];
-    //             else
-    //             {
-    //                 new_knots_n_[k + 1] = t;
-    //                 break;
-    //             }
-    //         }
-    //         new_knots_length_n ++;
-    //     }
-    // }
-    // for(int i = 0; i < new_control_points_m.size(); ++ i)
-    // {
-    //     for(int j = 0; j < new_control_points_m[i].size(); ++ j)
-    //     {
-    //         auto x = new_control_points_m[i][j];
-    //         printf("%d %d (%f %f %f)\n", i, j, x.x(), x.y(), x.z());
-    //     }
-    // }
-    //generate the mesh
-    // std::vector<NURBSPatch> patches
     for(int i = 0; i < knots_m_.size() - 1; ++ i)
     {
         if(knots_m_[i] == knots_m_[i + 1]) continue;
@@ -697,10 +421,12 @@ NURBSSurface::genMesh_patch(const Vec3f& translation, float scale)
             for(int k = i - degree_m_; k <= i + degree_m_ + 1; ++ k) new_knots_m.push_back(knots_m_[k]);
             for(int l = j - degree_n_; l <= j + degree_n_ + 1; ++ l) new_knots_n.push_back(knots_n_[l]);
             patch.setKnots(new_knots_m, new_knots_n);
+            // printf("u : \n");
             // for(auto knot : patch.knots_u_) printf("%f ", knot);
             // printf("\n");
+            // printf("v: \n");
             // for(auto knot : patch.knots_v_) printf("%f ", knot);
-            // printf("\n");
+            // printf("\n\n");
             patches.push_back(patch);
         }
     }
@@ -729,6 +455,7 @@ NURBSSurface::findSpan(int degree, const std::vector<float> &knots, float t)
 unsigned int
 NURBSSurface::knotMultiplicity(const std::vector<float> &knots, float t)
 {
+    //TODO : get the multiplicity of the knots
     unsigned int mult = 0;
     for(auto knot : knots)
     {
@@ -740,6 +467,9 @@ NURBSSurface::knotMultiplicity(const std::vector<float> &knots, float t)
 void 
 NURBSSurface::KnotInsertU(float u, int reapeat)
 {
+    //TODO: Insert knots in u vector
+    // debug = u == 0.990099f;
+    // printf("Add %f\n", u);
     int span = findSpan(degree_m_, knots_m_, u);
     unsigned int s = knotMultiplicity(knots_m_, u);
     std::vector<std::vector<Vec3f>> new_cp;
@@ -747,7 +477,7 @@ NURBSSurface::KnotInsertU(float u, int reapeat)
     std::vector<float> new_knots_u;
     if(s == degree_m_) return;
     if((reapeat + s) > degree_m_) reapeat = degree_m_ - s;
-
+    // printf("Add %f %d\n", u, reapeat);
     new_knots_u.resize(knots_m_.size() + reapeat);
     for(int i = 0; i <= span; ++ i) new_knots_u[i] = knots_m_[i];
     for(int i = 1; i <= reapeat; ++ i) new_knots_u[span + i] = u;
@@ -831,6 +561,8 @@ NURBSSurface::KnotInsertU(float u, int reapeat)
 void 
 NURBSSurface::KnotInsertV(float v, int reapeat)
 {
+    //TODO: Insert knots in v vector
+    // printf("%f\n", v);
     int span = findSpan(degree_n_, knots_n_, v);
     unsigned int s = knotMultiplicity(knots_n_, v);
     std::vector<std::vector<Vec3f>> new_cp;
