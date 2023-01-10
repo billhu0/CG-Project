@@ -1,6 +1,6 @@
 {
   "spp": 256,
-  "max_depth": 12,
+  "max_depth": 8,
   "image_resolution" : [600, 600],
   "cam_config" : {
     "position" : [0,1,6.8],
@@ -19,6 +19,11 @@
       "color" : [0.725, 0.71, 0.68],
       "type" : "diffuse",
       "name" : "grey_diffuse"
+    },
+    {
+      "color" : [1.0, 1.0, 1.0],
+      "type" : "diffuse",
+      "name" : "black_diffuse"
     },
     {
       "color" : [0.14, 0.45, 0.091],
@@ -76,7 +81,15 @@
       "obj_file_path" : "../assets/sphere.nurbs",
       "material_name" : "grey_diffuse",
       "translate": [-0.35,1.0,0.4],
-      "scale" : 0.5,
+      "scale" : 0.4,
+      "has_bvh" : true,
+      "is_NURBS" : true
+    },
+    {
+      "obj_file_path" : "../assets/semisphere.nurbs",
+      "material_name" : "grey_diffuse",
+      "translate": [0.0,0.0,0.0],
+      "scale" : 0.4,
       "has_bvh" : true,
       "is_NURBS" : true
     }

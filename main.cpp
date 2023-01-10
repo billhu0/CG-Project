@@ -8,6 +8,7 @@
 #include <fstream>
 
 int main(int argc, char *argv[]) {
+  // freopen("out.txt", "w", stdout);
   setbuf(stdout, nullptr);
   /// load config from json file
   Config config;
