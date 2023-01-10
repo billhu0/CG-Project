@@ -69,7 +69,7 @@ class PatchMesh : public Mesh{
     void buildBVH() override;
   protected:
     void lbvhHit(Interaction &Interaction, Ray &ray) const;
-    bool intersectOnePatch(Ray &ray, Interaction &interaction, const NURBSPatch &patch) const;
+    bool intersectOnePatch(Ray &ray, Interaction &interaction, const NURBSPatch &patch, Vec2f initial_val) const; 
     const AABB getPatch(int pos);
     void genAABB_for_BVH(BVHNode* now);
     float calCost(AABB a, int numa, AABB b, int numb, AABB N);

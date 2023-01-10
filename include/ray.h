@@ -14,7 +14,7 @@ struct Ray {
 
   explicit Ray(const Vec3f &o, const Vec3f &dir, float t_min = RAY_DEFAULT_MIN, float t_max = RAY_DEFAULT_MAX)
   : origin(o)
-  , direction(dir)
+  , direction(dir.normalized())
   , t_min(t_min)
   , t_max(t_max) {}
 

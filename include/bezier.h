@@ -37,10 +37,9 @@ class NURBSPatch
     std::vector<std::vector<Vec4f>> control_points_;
     Vec2f range_u_, range_v_;
     std::vector<std::vector<float>> au, av, bu, bv, cu, cv, du, dv;
-    int span_u_, span_v_;
     int degree_u_, degree_v_;
     std::vector<float> knots_u_, knots_v_;
-    NURBSPatch(int m, int n, int span_u, int span_v, Vec2f range_u, Vec2f range_v);
+    NURBSPatch(int m, int n, Vec2f range_u, Vec2f range_v);
     void setControlPointAndWeight(int i, int j, Vec3f point, float weight);
     void setParameter(std::vector<float> knots_u, std::vector<float> knots_v);
     void setKnots(std::vector<float>& knots_u, std::vector<float>& knots_v);

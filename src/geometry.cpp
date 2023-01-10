@@ -435,7 +435,7 @@ PatchMesh::buildBVH()
   {
     patch_AABB.push_back(AABB(patches[i]));
     patch_indices.push_back(i);
-    // auto x = patch_AABB[i];
+    auto x = patch_AABB[i];
     // printf("%d low : %f %f %f upper: %f %f %f\n", i, x.low_bnd.x(), x.low_bnd.y(), x.low_bnd.z(), x.upper_bnd.x(), x.upper_bnd.y(), x.upper_bnd.z());
   }
   bvh = new BVHNode();
@@ -467,11 +467,36 @@ PatchMesh::lbvhHit(Interaction &interaction, Ray &ray) const
         for(int j = 0; j < now.num; ++ j)
         {
           int i = patch_indices[now.object_offset + j];
-          Interaction temp;
-        
-          if (intersectOnePatch(ray, temp, patches[i]) && (temp.dist < interaction.dist)) {
-            interaction = temp;
-          }
+          bool tag = false;
+          auto patch = patches[i];
+          int step = 10;
+          float offset = 0.9f / float(step);
+          Interaction temp1, temp2;
+          // for(int i = 0; i < step; ++ i)
+          // {
+          //   for(int j = 0; j < step; ++ j)
+          //   {
+          //     Interaction temp;
+          //     bool retval = intersectOnePatch(ray, temp, patch, Vec2f(float(0.05f + i * offset), float(0.05f + j * offset)));
+          //     if(retval && temp.dist < interaction.dist)
+          //     {
+          //       interaction = temp;
+          //       tag = true;
+          //       break;
+          //     }
+          //     if(tag) break;
+          //   }
+          // }
+          // if(intersectOnePatch(ray, temp1, patches[i], Vec2f(0.1f, 0.5f)) && temp1.dist < interaction.dist)
+            // interaction = temp1;
+          float initial_u = (patches[i].range_u_.x() + patches[i].range_u_.y()) / 2.0f;
+          float initial_v = (patches[i].range_v_.x() + patches[i].range_v_.y()) / 2.0f;
+          if(intersectOnePatch(ray, temp2, patches[i], Vec2f(initial_u, initial_v)) && temp2.dist < interaction.dist)
+            interaction = temp2;
+          // if (intersectOnePatch(ray, temp, patches[i], Vec2f(0.1f, 0.5f))) {
+          //   // printf("[%f %f] %f %f\n", t_in, t_out, temp.dist, interaction.dist);
+          //   if (temp.dist < interaction.dist) interaction = temp;
+          // }
         }
       }
       else
@@ -485,10 +510,11 @@ PatchMesh::lbvhHit(Interaction &interaction, Ray &ray) const
 }
 
 bool
-PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const NURBSPatch &patch) const
+PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const NURBSPatch &patch, Vec2f initial_val) const
 {
   // Write the ray (o+td) as an intersection of two planes.
   // 把 ray (o+td形式) 写成两个平面的交点形式
+  
   Vec3f N1, N2;
   if (std::abs(ray.direction.x()) > std::abs(ray.direction.y()) && std::abs(ray.direction.x()) > std::abs(ray.direction.z())) {
     N1 = Vec3f(ray.direction.y(), -ray.direction.x(), 0);
@@ -501,39 +527,47 @@ PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const NURBSPatc
   float d1 = -N1.dot(ray.origin);
   float d2 = -N2.dot(ray.origin);
 
-  constexpr float eps = 1e-6;
+  constexpr float eps = EPS;
+  // constexpr float eps = 0.001;
   constexpr int MAX_ITER = 7;
 
 
   // TODO: write Newton Root-Finder here?
   float error_prev = std::numeric_limits<float>::max();
   // u, v are the initial guess of the intersection point
-  const float u_initial = (patch.range_u_.x() + patch.range_u_.y()) / 2.0f, v_initial = (patch.range_v_.x() + patch.range_v_.y())/2.0f;
+  // const float u_initial = (patch.range_u_.x() + patch.range_u_.y()) / 2.0f, v_initial = (patch.range_v_.x() + patch.range_v_.y())/2.0f;
+  const float u_initial = initial_val.x(), v_initial = initial_val.y();
   float u = u_initial, v = v_initial;
+  // printf("(u, v) : %f %f\n", u, v);
   for (int iter = 0; iter < MAX_ITER; ++iter) {
     // S = evaluate surface (u, v)
-    if(u < patch.range_u_.x() || u >= patch.range_u_.y()) return false;
-    if(v < patch.range_v_.x() || v >= patch.range_v_.y()) return false;
+    // printf("(u, v) : %f %f\n", u, v);
+
     auto res = patch.evaluate(u, v);
     Vertex S = res.first;
-    // printf("%f %f %f %f %f\n", S.position.x(), S.position.y(), S.position.z(), u, v);
+    // printf("(%f, %f, %f) u: %f v : %f\n", S.position.x(), S.position.y(), S.position.z(), u, v);
     Vec2f R = Vec2f(N1.dot(S.position) + d1, N2.dot(S.position) + d2);
-    float error = std::abs(R.x()) + std::abs(R.y());
+    float error = R.norm();
     // printf("%f\n", error);
     if (error < eps) {
       // printf("in\n");
+      
       // Compute the intersection point
       // Update the interaction variables
+      float t = (S.position - ray.origin).dot(ray.direction);
+      if(t < EPS) return false;
       interaction.pos = S.position;
-      interaction.dist = (S.position - ray.origin).dot(ray.direction);
+      interaction.dist = t;
+      // printf("S position: %f %f %f\n", S.position.x(), S.position.y(), S.position.z());
+      // printf("o: %f %f %f\n", ray.origin.x(), ray.origin.y(), ray.origin.z());
       // interaction.normal = (patch.evaluate(u+eps, v).position - patch.evaluate(u-eps, v).position).cross(patch.evaluate(u, v+eps).position - patch.evaluate(u, v-eps).position).normalized();
       interaction.normal = S.normal;
-      // printf("pos: %f %f %f\n", S.position.x(), S.position.y(), S.position.z());
+      // printf("(%f %f) pos: %f %f %f\n",u, v, S.position.x(), S.position.y(), S.position.z());
       // auto ref = Vec3f(S.position.x() + 0.3f, S.position.y() - 1.0f, S.position.z() - 0.4f).normalized();
       // printf("pos - o: %f %f %f\n", ref.x(), ref.y(), ref.z());
       // printf("normal: %f %f %f\n", S.normal.x(), S.normal.y(), S.normal.z());
       interaction.material = bsdf;
-      interaction.wi = ray.direction;
+      // interaction.wi = ray.direction;
       interaction.wo = -ray.direction;
       interaction.type = Interaction::Type::NURBS;
       // printf("Patch mesh : %f\n", interaction.dist);
@@ -542,27 +576,44 @@ PatchMesh::intersectOnePatch(Ray &ray, Interaction &interaction, const NURBSPatc
     // printf("%f\n", error);
     if (std::abs(error) > error_prev) {
       // printf("\n");
+      // printf("out (error increase)\n");
+      return false;
+    }
+    if(u < patch.range_u_.x() || u >= patch.range_u_.y())
+    {
+      // printf("out (out of range u)\n");
+      return false;
+    }
+    if(v < patch.range_v_.x() || v >= patch.range_v_.y())    
+    {
+      // printf("out (out of range v)\n");
       return false;
     }
     error_prev = std::abs(error);
     // J = compute Jacobian matrix
     // FIXME: 这里是 S_u(u, v), 应该不能直接patch.evaluate?
     auto ress = patch.evaluate(u, v).second;
-    Vec2f Fu = {N1.dot(ress.first), N2.dot(ress.first) + d2};
-    Vec2f Fv = {N1.dot(ress.second) + d1, N2.dot(ress.second)};
+    Vec2f Fu = {N1.dot(ress.first), N2.dot(ress.first)};
+    Vec2f Fv = {N1.dot(ress.second), N2.dot(ress.second)};
     Mat2f J;
+    // printf("%f %f\n", Fu.x(), Fu.y());
+    // printf("%f %f\n", Fv.x(), Fv.y());
     J.col(0) = Fu;
     J.col(1) = Fv;
+    // printf("%f %f %f %f\n", J(0, 0), J(1, 0), J(1, 0), J(0, 0));
 
     // if J is singular
     if (std::abs(J.determinant()) < eps) {
       u += 0.1 * (u_initial - u) * drand48();
       v += 0.1 * (v_initial - v) * drand48();
     } else {
-      u -= J.inverse().col(0).dot(R);
-      v -= J.inverse().col(1).dot(R);
+      // u -= J.inverse().transpose().col(0).dot(R);
+      // v -= J.inverse().transpose().col(1).dot(R);
+      u -= J.inverse().row(0).dot(R);
+      v -= J.inverse().row(1).dot(R);
     }
   }
+  // printf("out (out of itr time)\n");
   // printf("\n");
   return false;
 }

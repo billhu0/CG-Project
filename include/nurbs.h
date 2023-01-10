@@ -43,6 +43,10 @@ class NURBSSurface{
         void setKnotN(int i, float knot);
         void setKnotNUniform();
         Vertex evaluate(float u, float v);
+        int findSpan(int degree, const std::vector<float> &knots, float t);
+        unsigned int knotMultiplicity(const std::vector<float> &knots, float t);
+        void KnotInsertU(float u, int reapeat);
+        void KnotInsertV(float v, int reapeat);
         std::shared_ptr<TriangleMesh> genMesh_triangle(const Vec3f& translation, float scale);
         std::shared_ptr<PatchMesh> genMesh_patch(const Vec3f& translation, float scale);
         // Object genObject_adaptivesample(float tolerance);

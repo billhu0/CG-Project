@@ -20,6 +20,7 @@ void Integrator::render() const {
     printf("\r%.02f%%", cnt * 100.0 / resolution.x());
     sampler.setSeed(omp_get_thread_num());
     for (int dy = 0; dy < resolution.y(); dy++) {
+      // printf("%d %d\n", dx, dy);
       Vec3f L(0, 0, 0);
       // printf("%d %d\n", dx, dy);
       // TODO: generate #spp rays for each pixel and use Monte Carlo integration to compute radiance.
@@ -54,6 +55,7 @@ Vec3f Integrator::radiance(Ray &ray, Sampler &sampler) const {
     }
     if(!foundIntersection || bounces >= max_depth) break;
     // printf("radiance : %f\n", isect.dist);
+    // if(isect.type == Interaction::Type::NURBS) return Vec3f(1.0f, 0.0f, 0.0f);
     L += beta.cwiseProduct(directLighting(isect, sampler, isDelta));
     
     Vec3f wo = isect.wo, wi;
@@ -92,15 +94,17 @@ Integrator::MIS(Vec3f value1, float pdf1, Vec3f value2, float pdf2) const
 Vec3f Integrator::directLighting(Interaction &interaction, Sampler &sampler, bool &isDelta) const {
   Vec3f L(0, 0, 0);
   // Compute direct lighting.
+  // printf("hit\n");
   float light_pdf = 0.0f;
   Vec3f light_sample_pos = scene->getLight()->sample(interaction, &light_pdf, sampler);
   Ray light_ray(interaction.pos, -interaction.wi);
   if(!scene->isShadowed(light_ray)) //sample on light
   {
     float cos_theta = interaction.normal.dot(-interaction.wi);
-    if(interaction.type == Interaction::Type::NURBS)
-    {
-      // printf("\n cos_theta: %f\n", cos_theta);
+    // if(interaction.type == Interaction::Type::NURBS)
+    // {
+      // printf("in\n");
+      // printf("cos_theta: %f\n", cos_theta);
       // auto ref_normal = Vec3f(interaction.pos.x() + 0.3f, interaction.pos.y() - 1.0f, interaction.pos.z() - 0.4f);
       // printf("pos : %f %f %f\n", interaction.pos.x(), interaction.pos.y(), interaction.pos.z());
       // printf("ref_cos_theta: %f\n", ref_normal.dot(-interaction.wi));
@@ -108,12 +112,12 @@ Vec3f Integrator::directLighting(Interaction &interaction, Sampler &sampler, boo
       // printf("normal : %f %f %f\n", interaction.normal.x(), interaction.normal.y(), interaction.normal.z());
       // printf("wi : %f %f %f\n", -interaction.wi.x(), -interaction.wi.y(), -interaction.wi.z());
       // cos_theta = ref_normal.dot(-interaction.wi);
-    }
+    // }
     float solid_angle_pdf = scene->getLight()->pdf(interaction, light_sample_pos);
     Vec3f Li = scene->getLight()->emission(light_sample_pos, -light_ray.direction);
     Vec3f fr = interaction.material->evaluate(interaction);
     L = Li.cwiseProduct(fr) * cos_theta * solid_angle_pdf / light_pdf;
-    if(interaction.type == Interaction::Type::NURBS) printf("L: %f %f %f\n", L.x(), L.y(), L.z());
+    // if(interaction.type == Interaction::Type::NURBS) printf("L: %f %f %f\n", L.x(), L.y(), L.z());
   }
   if(interaction.material->isDelta())
   {
